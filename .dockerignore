@@ -1,0 +1,11 @@
+.git
+.gitignore
+.vscode
+.idea
+node_modules
+dist
+release
+local-server
+*.log
+*.zip
+*.tar

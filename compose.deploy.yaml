@@ -1,0 +1,16 @@
+services:
+  backend:
+    image: solar-ems-backend:latest
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: sqlite:////data/solar_ems.db
+    volumes:
+      - ./data:/data
+
+  frontend:
+    image: solar-ems-frontend:latest
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
