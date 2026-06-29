@@ -41,9 +41,15 @@ const counts = computed(() => [
     { key: 'PCS', label: 'PCS', active: props.activeDeviceCounts.PCS, total: props.deviceCounts.PCS },
     {
         key: 'ESS_BATTERY',
-        label: 'ESS Battery',
+        label: '배터리 뱅크',
         active: props.activeDeviceCounts.ESS_BATTERY,
         total: props.deviceCounts.ESS_BATTERY,
+    },
+    {
+        key: 'BATTERY_RACK',
+        label: '배터리 랙',
+        active: props.activeDeviceCounts.BATTERY_RACK,
+        total: props.deviceCounts.BATTERY_RACK,
     },
     { key: 'BMS', label: 'BMS', active: props.activeDeviceCounts.BMS, total: props.deviceCounts.BMS },
     { key: 'AC_PANEL', label: 'AC 배전반', active: props.activeDeviceCounts.AC_PANEL, total: props.deviceCounts.AC_PANEL },

@@ -15,7 +15,7 @@
         </div>
         <div class="power-flow-device__content">
             <strong>{{ device.name }}</strong>
-            <b>{{ displayValue }}</b>
+            <b v-if="showDisplayValue">{{ displayValue }}</b>
             <span class="power-flow-device__meta">
                 <small>{{ deviceVisual(device.device_type).label }}</small>
                 <em>{{ deviceStatusLabel(device) }}</em>
@@ -62,6 +62,7 @@ const emit = defineEmits<{
 }>()
 
 const anchors: PowerFlowAnchor[] = ['TOP', 'RIGHT', 'BOTTOM', 'LEFT']
+const showDisplayValue = computed(() => props.device.device_type !== 'AC_PANEL')
 const displayValue = computed(() => {
     if (props.device.display_value == null) {
         return `#${props.device.id}`

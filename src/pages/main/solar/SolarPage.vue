@@ -56,7 +56,7 @@
                     subtitle="인버터 단위 현재 출력"
                     :value="`Updated ${updatedAtLabel}`"
                 >
-                    <div class="solar-inverter-list">
+                    <div class="solar-inverter-list scroll-y">
                         <div
                             v-for="inverter in overview?.inverters ?? []"
                             :key="inverter.id"
@@ -300,9 +300,6 @@ onBeforeUnmount(() => {
     flex-direction: column;
     gap: 10px;
     min-height: 0;
-    overflow-y: auto;
-    padding-right: 4px;
-    margin-right: -12px;
 }
 
 .solar-inverter-item {

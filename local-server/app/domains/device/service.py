@@ -1,7 +1,7 @@
 ﻿from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from .repository import create_device, delete_device, get_device, list_devices, update_device
+from .repository import create_device, delete_device, device_delete_blockers, get_device, list_devices, update_device
 from .schemas import DeviceOut, DeviceSaveBody
 from ..pv_string.repository import list_inverter_links
 
@@ -35,8 +35,13 @@ def save_device(db: Session, device_id: int, body: DeviceSaveBody) -> dict:
 
 
 def remove_device(db: Session, device_id: int) -> dict:
-    if not delete_device(db, device_id):
+    device = get_device(db, device_id)
+    if device is None:
         raise HTTPException(status_code=404, detail="Device not found")
+    blockers = device_delete_blockers(db, device_id)
+    if blockers:
+        raise HTTPException(status_code=409, detail=f"Device is referenced by: {', '.join(blockers)}")
+    delete_device(db, device_id)
     return {"deleted": True}
 
 

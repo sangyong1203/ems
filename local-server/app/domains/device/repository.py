@@ -2,8 +2,13 @@
 from sqlalchemy.orm import Session
 
 from .models import Device
+from ..alarm.models import Alarm
+from ..ess.models import EssSystem, EssSystemBatteryRack
+from ..maintenance.models import MaintenanceRecord
+from ..power_flow.models import PowerFlowLayoutNode
 from ..pv_string.models import InverterPvStringLink
 from ..pv_string.repository import replace_inverter_links
+from ..telemetry.models import TelemetryHistory, TelemetryLatest
 
 
 def list_devices(db: Session, device_type: str = "", status: str = "", keyword: str = "") -> list[Device]:
@@ -77,11 +82,42 @@ def update_device(db: Session, device_id: int, payload: dict, pv_string_links: l
     return device
 
 
+def device_delete_blockers(db: Session, device_id: int) -> list[str]:
+    blockers: list[str] = []
+    if (
+        db.query(EssSystem)
+        .filter(
+            or_(
+                EssSystem.pcs_device_id == device_id,
+                EssSystem.bms_device_id == device_id,
+                EssSystem.battery_device_id == device_id,
+            )
+        )
+        .first()
+        is not None
+    ):
+        blockers.append("ESS system")
+    if db.query(EssSystemBatteryRack).filter(EssSystemBatteryRack.rack_device_id == device_id).first() is not None:
+        blockers.append("ESS battery rack")
+    if db.query(InverterPvStringLink).filter(InverterPvStringLink.inverter_device_id == device_id).first() is not None:
+        blockers.append("PV string connection")
+    if db.query(PowerFlowLayoutNode).filter(PowerFlowLayoutNode.device_id == device_id).first() is not None:
+        blockers.append("Power Flow layout")
+    if db.query(TelemetryLatest).filter(TelemetryLatest.device_id == device_id).first() is not None:
+        blockers.append("latest telemetry")
+    if db.query(TelemetryHistory).filter(TelemetryHistory.device_id == device_id).first() is not None:
+        blockers.append("telemetry history")
+    if db.query(Alarm).filter(Alarm.device_id == device_id).first() is not None:
+        blockers.append("alarm history")
+    if db.query(MaintenanceRecord).filter(MaintenanceRecord.device_id == device_id).first() is not None:
+        blockers.append("maintenance history")
+    return blockers
+
+
 def delete_device(db: Session, device_id: int) -> bool:
     device = get_device(db, device_id)
     if device is None:
         return False
-    db.query(InverterPvStringLink).filter(InverterPvStringLink.inverter_device_id == device_id).delete()
     db.delete(device)
     db.commit()
     return True

@@ -125,17 +125,22 @@ const warrantyText = computed(() => {
     return `${props.device.warranty_start_date || '-'} ~ ${props.device.warranty_end_date || '-'}`
 })
 
-const capacityDetailLabel = computed(() => (props.device?.device_type === 'SENSOR' ? '측정 범위' : '정격 용량'))
+const capacityDetailLabel = computed(() =>
+    ['WEATHER_SENSOR', 'SENSOR'].includes(props.device?.device_type ?? '') ? '측정 범위' : '정격 용량',
+)
 
 const deviceTypeLabel = (value: string) => {
     const labels: Record<string, string> = {
         INVERTER: '인버터',
         PCS: 'PCS',
-        ESS_BATTERY: 'ESS Battery',
+        ESS_BATTERY: '배터리 뱅크',
+        BATTERY_RACK: '배터리 랙',
         BMS: 'BMS',
         AC_PANEL: 'AC 배전반',
-        METER: '계량기',
-        SENSOR: '센서',
+        GRID_METER: '계통 계량기',
+        LOAD_METER: '부하 계량기',
+        WEATHER_SENSOR: '기상 센서',
+        SENSOR: '일반 센서',
         ETC: '기타',
     }
     return labels[value] || value || '-'

@@ -8,56 +8,57 @@
                 title="정비 이력"
                 :value="`${maintenanceList.length}건`"
             >
-                <div class="maintenance-toolbar">
-                    <div class="maintenance-toolbar__filters">
-                        <SearchText
-                            v-model="searchParams.keyword"
-                            placeholder="장비명, 제목, 담당자 검색"
-                            width="250px"
-                            showSuffixIcon
-                            @on-enter="getMaintenanceList"
-                        />
-                        <DropdownList
-                            v-model="searchParams.deviceId"
-                            placeholder="대상 장비"
-                            width="160px"
-                            :list="deviceFilterOptions"
-                            option-label="label"
-                            option-value="value"
-                            @on-change="getMaintenanceList"
-                        />
-                        <DropdownList
-                            v-model="searchParams.maintenanceType"
-                            placeholder="정비 유형"
-                            width="150px"
-                            :list="maintenanceTypeFilterOptions"
-                            option-label="label"
-                            option-value="value"
-                            @on-change="getMaintenanceList"
-                        />
-                        <DropdownList
-                            v-model="searchParams.status"
-                            placeholder="상태"
-                            width="130px"
-                            :list="statusFilterOptions"
-                            option-label="label"
-                            option-value="value"
-                            @on-change="getMaintenanceList"
-                        />
-                        <el-date-picker
-                            v-model="dateRange"
-                            class="maintenance-date-range"
-                            type="daterange"
-                            value-format="YYYY-MM-DD"
-                            start-placeholder="시작일"
-                            end-placeholder="종료일"
-                            @change="changeDateRange"
-                        />
-                    </div>
-                    <el-button class="maintenance-create-button" type="primary" @click="openCreateDialog">
-                        정비 등록
-                    </el-button>
-                </div>
+                <TableToolbar>
+                    <SearchText
+                        v-model="searchParams.keyword"
+                        placeholder="장비명, 제목, 담당자 검색"
+                        width="250px"
+                        showSuffixIcon
+                        @on-enter="getMaintenanceList"
+                    />
+                    <DropdownList
+                        v-model="searchParams.deviceId"
+                        placeholder="대상 장비"
+                        width="160px"
+                        :list="deviceFilterOptions"
+                        option-label="label"
+                        option-value="value"
+                        @on-change="getMaintenanceList"
+                    />
+                    <DropdownList
+                        v-model="searchParams.maintenanceType"
+                        placeholder="정비 유형"
+                        width="150px"
+                        :list="maintenanceTypeFilterOptions"
+                        option-label="label"
+                        option-value="value"
+                        @on-change="getMaintenanceList"
+                    />
+                    <DropdownList
+                        v-model="searchParams.status"
+                        placeholder="상태"
+                        width="130px"
+                        :list="statusFilterOptions"
+                        option-label="label"
+                        option-value="value"
+                        @on-change="getMaintenanceList"
+                    />
+                    <el-date-picker
+                        v-model="dateRange"
+                        class="maintenance-date-range"
+                        type="daterange"
+                        value-format="YYYY-MM-DD"
+                        start-placeholder="시작일"
+                        end-placeholder="종료일"
+                        @change="changeDateRange"
+                    />
+
+                    <template #actions>
+                        <el-button class="maintenance-create-button" type="primary" @click="openCreateDialog">
+                            정비 등록
+                        </el-button>
+                    </template>
+                </TableToolbar>
 
                 <div class="maintenance-table-wrap">
                     <el-table
@@ -122,7 +123,15 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessageBox } from 'element-plus'
-import { DropdownList, GlassPanel, MetricCardRow, SearchText, StatusBadge, TableRowActions } from '@/shared/components'
+import {
+    DropdownList,
+    GlassPanel,
+    MetricCardRow,
+    SearchText,
+    StatusBadge,
+    TableRowActions,
+    TableToolbar,
+} from '@/shared/components'
 import { isSuccessResponse } from '@/shared/utils'
 import MaintenanceDetailPanel from './components/MaintenanceDetailPanel.vue'
 import MaintenanceFormDialog from './components/MaintenanceFormDialog.vue'
@@ -141,7 +150,7 @@ const deviceOptions = ref<MaintenanceDeviceOption[]>([])
 
 const searchParams = reactive({
     keyword: '',
-    deviceId: null as number | null,
+    deviceId: '' as number | '',
     maintenanceType: '',
     status: '',
     dateFrom: '',
@@ -172,7 +181,7 @@ const statusOptions = [
 const maintenanceTypeFilterOptions = computed(() => [{ label: '전체 유형', value: '' }, ...maintenanceTypeOptions])
 const statusFilterOptions = computed(() => [{ label: '전체 상태', value: '' }, ...statusOptions])
 const deviceFilterOptions = computed(() => [
-    { label: '전체 장비', value: null },
+    { label: '전체 장비', value: '' },
     ...deviceOptions.value.map(item => ({ label: item.name, value: item.id })),
 ])
 
@@ -215,11 +224,14 @@ const deviceTypeLabel = (value: string | null) => {
     const labels: Record<string, string> = {
         INVERTER: '인버터',
         PCS: 'PCS',
-        ESS_BATTERY: 'ESS Battery',
+        ESS_BATTERY: '배터리 뱅크',
+        BATTERY_RACK: '배터리 랙',
         BMS: 'BMS',
         AC_PANEL: 'AC 배전반',
-        METER: '계량기',
-        SENSOR: '센서',
+        GRID_METER: '계통 계량기',
+        LOAD_METER: '부하 계량기',
+        WEATHER_SENSOR: '기상 센서',
+        SENSOR: '일반 센서',
         ETC: '기타',
     }
     return value ? labels[value] || value : '-'
@@ -260,7 +272,10 @@ const getDevices = async () => {
 }
 
 const getMaintenanceList = async () => {
-    const res = await maintenanceManagementApi.getList(searchParams)
+    const res = await maintenanceManagementApi.getList({
+        ...searchParams,
+        deviceId: searchParams.deviceId || undefined,
+    })
     if (isSuccessResponse(res.result)) {
         maintenanceList.value = res.data.list
         if (!maintenanceList.value.length) {
@@ -351,21 +366,6 @@ onMounted(async () => {
     min-width: 0;
 }
 
-.maintenance-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-    margin-bottom: 14px;
-}
-
-.maintenance-toolbar__filters {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 0;
-}
-
 .maintenance-date-range {
     width: 230px;
 }
@@ -398,21 +398,15 @@ onMounted(async () => {
         flex: 0 0 auto;
     }
 
-    .maintenance-toolbar {
-        align-items: flex-start;
-        flex-wrap: wrap;
-    }
-
-    .maintenance-toolbar__filters {
+    :deep(.table-toolbar__filters) {
         flex: 1 1 680px;
-        flex-wrap: wrap;
     }
 
-    :deep(.maintenance-toolbar__filters .search-text) {
+    :deep(.table-toolbar__filters .search-text) {
         flex: 1 1 250px;
     }
 
-    :deep(.maintenance-toolbar__filters .dropdown-list) {
+    :deep(.table-toolbar__filters .dropdown-list) {
         flex: 1 1 140px;
     }
 
@@ -432,16 +426,8 @@ onMounted(async () => {
         padding: 8px;
     }
 
-    .maintenance-toolbar {
-        gap: 10px;
-    }
-
-    .maintenance-toolbar__filters {
-        width: 100%;
-    }
-
-    :deep(.maintenance-toolbar__filters .search-text),
-    :deep(.maintenance-toolbar__filters .dropdown-list),
+    :deep(.table-toolbar__filters .search-text),
+    :deep(.table-toolbar__filters .dropdown-list),
     .maintenance-date-range {
         flex: 1 1 100%;
         width: 100% !important;

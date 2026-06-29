@@ -32,11 +32,10 @@
                             overview?.summary.essDischargeKw,
                         )} kW`"
                     >
-                        <TrendDualAreaChart
-                            first-name="충전"
-                            second-name="방전"
-                            :first-data="overview?.history.essCharge ?? []"
-                            :second-data="overview?.history.essDischarge ?? []"
+                        <EssPowerChart
+                            :charge-data="overview?.history.essCharge ?? []"
+                            :discharge-data="overview?.history.essDischarge ?? []"
+                            :soc-data="overview?.history.essSoc ?? []"
                             unit="kW"
                         />
                     </GlassPanel>
@@ -129,7 +128,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { GlassPanel, MetricCardRow, TrendAreaChart } from '@/shared/components'
+import { EssPowerChart, GlassPanel, MetricCardRow, TrendAreaChart } from '@/shared/components'
 import { isSuccessResponse } from '@/shared/utils'
 import TrendDualAreaChart from './components/TrendDualAreaChart.vue'
 import trendApi from './service/trend.api'

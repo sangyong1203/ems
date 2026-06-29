@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ...core.database import Base
@@ -18,3 +18,17 @@ class EssSystem(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     install_location: Mapped[str | None] = mapped_column(String(160))
     memo: Mapped[str | None] = mapped_column(Text)
+
+
+class EssSystemBatteryRack(Base):
+    __tablename__ = "ess_system_battery_racks"
+    __table_args__ = (
+        UniqueConstraint("ess_system_id", "rack_device_id", name="uq_ess_system_battery_rack_device"),
+        UniqueConstraint("ess_system_id", "rack_no", name="uq_ess_system_battery_rack_no"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    ess_system_id: Mapped[int] = mapped_column(ForeignKey("ess_systems.id"), nullable=False)
+    rack_device_id: Mapped[int] = mapped_column(ForeignKey("devices.id"), nullable=False)
+    rack_no: Mapped[int] = mapped_column(Integer, nullable=False)
+    display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

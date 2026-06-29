@@ -4,6 +4,7 @@ export type DeviceCounts = {
     INVERTER: number
     PCS: number
     ESS_BATTERY: number
+    BATTERY_RACK: number
     BMS: number
     AC_PANEL: number
     METER: number

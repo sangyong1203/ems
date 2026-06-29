@@ -1,7 +1,18 @@
 import type { APIResponse } from '@/http/type'
 
 export type DeviceStatus = 'NORMAL' | 'WARNING' | 'FAULT' | 'MAINTENANCE' | 'UNKNOWN'
-export type DeviceType = 'INVERTER' | 'PCS' | 'ESS_BATTERY' | 'BMS' | 'AC_PANEL' | 'METER' | 'SENSOR' | 'ETC'
+export type DeviceType =
+    | 'INVERTER'
+    | 'PCS'
+    | 'ESS_BATTERY'
+    | 'BATTERY_RACK'
+    | 'BMS'
+    | 'AC_PANEL'
+    | 'GRID_METER'
+    | 'LOAD_METER'
+    | 'WEATHER_SENSOR'
+    | 'SENSOR'
+    | 'ETC'
 
 export type DeviceItem = {
     id: number

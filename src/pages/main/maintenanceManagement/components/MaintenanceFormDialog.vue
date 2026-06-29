@@ -126,11 +126,16 @@ const createDefaultForm = (): MaintenanceSaveParams => ({
     maintenance_type: '정기점검',
     title: '',
     description: null,
+    cause: null,
     action_taken: null,
+    before_status: null,
+    after_status: null,
     status: 'SCHEDULED',
     maintenance_date: null,
     next_maintenance_date: null,
     manager_name: null,
+    contractor_name: null,
+    cost: null,
     memo: null,
 })
 
@@ -158,11 +163,16 @@ const syncForm = async () => {
             maintenance_type: props.maintenance.maintenance_type,
             title: props.maintenance.title,
             description: props.maintenance.description,
+            cause: props.maintenance.cause,
             action_taken: props.maintenance.action_taken,
+            before_status: props.maintenance.before_status,
+            after_status: props.maintenance.after_status,
             status: props.maintenance.status,
             maintenance_date: props.maintenance.maintenance_date,
             next_maintenance_date: props.maintenance.next_maintenance_date,
             manager_name: props.maintenance.manager_name,
+            contractor_name: props.maintenance.contractor_name,
+            cost: props.maintenance.cost,
             memo: props.maintenance.memo,
         })
     }
@@ -195,8 +205,12 @@ const saveMaintenance = async () => {
         ...form,
         title: form.title.trim(),
         description: normalizeText(form.description),
+        cause: normalizeText(form.cause),
         action_taken: normalizeText(form.action_taken),
+        before_status: normalizeText(form.before_status),
+        after_status: normalizeText(form.after_status),
         manager_name: normalizeText(form.manager_name),
+        contractor_name: normalizeText(form.contractor_name),
         memo: normalizeText(form.memo),
     })
 }

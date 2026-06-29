@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
-from .base import Base, Device, EssSystem, InverterPvStringLink, ProjectConfig, PvString, User
+from .base import Base, Device, EssSystem, EssSystemBatteryRack, InverterPvStringLink, ProjectConfig, PvString, User
 from ..core.database import engine
 from ..domains.simulator.generator import generate_today
 
@@ -72,7 +72,7 @@ def _ensure_ess_battery_device(db: Session) -> None:
     db.add(
         Device(
             device_type="ESS_BATTERY",
-            name="ESS Battery #1",
+            name="Battery Bank #1",
             manufacturer="LG Energy Solution",
             model_name="ESS-RACK-1000",
             serial_number="BAT-2026-001",
@@ -84,6 +84,13 @@ def _ensure_ess_battery_device(db: Session) -> None:
             vendor_name="Solar EPC",
         )
     )
+
+
+def _normalize_battery_bank_names(db: Session) -> None:
+    batteries = db.query(Device).filter(Device.device_type == "ESS_BATTERY").all()
+    for battery in batteries:
+        if battery.name and battery.name.startswith("ESS Battery"):
+            battery.name = battery.name.replace("ESS Battery", "Battery Bank", 1)
 
 
 def _ensure_pv_strings(db: Session) -> None:
@@ -141,13 +148,63 @@ def _ensure_ess_systems(db: Session) -> None:
     )
 
 
+def _ensure_battery_racks(db: Session) -> None:
+    db.flush()
+    system = db.query(EssSystem).order_by(EssSystem.id.asc()).first()
+    if system is None:
+        return
+
+    existing_links = {
+        link.rack_no
+        for link in db.query(EssSystemBatteryRack).filter(EssSystemBatteryRack.ess_system_id == system.id).all()
+    }
+    rack_specs = [
+        (1, "NORMAL"),
+        (2, "NORMAL"),
+        (3, "WARNING"),
+        (4, "NORMAL"),
+    ]
+
+    for rack_no, status in rack_specs:
+        serial_number = f"RACK-2026-{rack_no:03d}"
+        rack = db.query(Device).filter(Device.serial_number == serial_number).first()
+        if rack is None:
+            rack = Device(
+                device_type="BATTERY_RACK",
+                name=f"Rack #{rack_no}",
+                manufacturer="LG Energy Solution",
+                model_name="ESS-RACK-250",
+                serial_number=serial_number,
+                capacity=250,
+                capacity_unit="kWh",
+                install_location=f"ESS Room Rack-{rack_no}",
+                communication_type="CAN",
+                slave_id=rack_no,
+                protocol="CANopen",
+                status=status,
+                is_active=True,
+            )
+            db.add(rack)
+            db.flush()
+
+        if rack_no not in existing_links:
+            db.add(
+                EssSystemBatteryRack(
+                    ess_system_id=system.id,
+                    rack_device_id=rack.id,
+                    rack_no=rack_no,
+                    display_order=rack_no,
+                )
+            )
+
+
 def _ensure_seed_users(db: Session) -> None:
     seed_users = [
         {
             "username": "admin",
             "password_hash": "1111",
             "name": "System Administrator",
-            "email": "admin@triggerx.local",
+            "email": "admin@Solar.local",
             "department": "Platform",
             "role": "Platform Admin",
             "status": "Active",
@@ -155,10 +212,10 @@ def _ensure_seed_users(db: Session) -> None:
             "created_at": datetime(2026, 5, 1, 10, 0, 0),
         },
         {
-            "username": "operator@triggerx.local",
+            "username": "operator@Solar.local",
             "password_hash": "1111",
             "name": "Operations Manager",
-            "email": "operator@triggerx.local",
+            "email": "operator@Solar.local",
             "department": "Operations",
             "role": "Operator",
             "status": "Active",
@@ -166,10 +223,10 @@ def _ensure_seed_users(db: Session) -> None:
             "created_at": datetime(2026, 5, 3, 14, 20, 0),
         },
         {
-            "username": "viewer@triggerx.local",
+            "username": "viewer@Solar.local",
             "password_hash": "1111",
             "name": "Security Viewer",
-            "email": "viewer@triggerx.local",
+            "email": "viewer@Solar.local",
             "department": "Security",
             "role": "Viewer",
             "status": "Inactive",
@@ -207,7 +264,7 @@ def create_tables() -> None:
                 connection.execute(text(f"ALTER TABLE users ADD COLUMN {column} {definition}"))
         connection.execute(text("UPDATE users SET role = 'Platform Admin' WHERE role = 'admin'"))
         connection.execute(text("UPDATE users SET name = 'System Administrator' WHERE username = 'admin' AND name = ''"))
-        connection.execute(text("UPDATE users SET email = 'admin@triggerx.local' WHERE username = 'admin' AND email = ''"))
+        connection.execute(text("UPDATE users SET email = 'admin@Solar.local' WHERE username = 'admin' AND email = ''"))
         connection.execute(text("UPDATE users SET department = 'Platform' WHERE username = 'admin' AND department = ''"))
 
     device_columns = {column["name"] for column in inspect(engine).get_columns("devices")}
@@ -272,7 +329,7 @@ def seed_database(db: Session) -> None:
             ),
             Device(
                 device_type="ESS_BATTERY",
-                name="ESS Battery #1",
+                name="Battery Bank #1",
                 manufacturer="LG Energy Solution",
                 model_name="ESS-RACK-1000",
                 serial_number="BAT-2026-001",
@@ -341,8 +398,10 @@ def seed_database(db: Session) -> None:
 
     _ensure_ac_panel_device(db)
     _ensure_ess_battery_device(db)
+    _normalize_battery_bank_names(db)
     _ensure_pv_strings(db)
     _ensure_ess_systems(db)
+    _ensure_battery_racks(db)
 
     db.commit()
 

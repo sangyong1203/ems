@@ -1,7 +1,5 @@
 <template>
     <section class="dashboard-page">
-        <!-- <MetricCardRow :items="kpiItems" /> -->
-
         <div class="dashboard-content">
             <div class="dashboard-main">
                 <div class="dashboard-power-flow-row">
@@ -18,7 +16,6 @@
                             :editable="false"
                         />
                     </GlassPanel> -->
-
                     <GlassPanel
                         class="dashboard-panel--power-flow"
                         title="전력 흐름"
@@ -26,14 +23,22 @@
                         subtitle-position="right"
                         :value="updatedAtText"
                     >
+                        <PowerFlowPalette
+                            v-if="powerFlowEditorData"
+                            class="dashboard-power-flow-palette"
+                            :devices="powerFlowEditorData.devices"
+                            :placed-device-ids="dashboardPalettePlacedDeviceIds"
+                            :editable="false"
+                        />
                         <!-- <DashboardPowerFlowMap :data="powerFlow" /> -->
                         <PowerFlowCanvas
                             v-if="powerFlowLayout && powerFlowEditorData"
                             :model-value="powerFlowLayout"
                             :devices="powerFlowEditorData.devices"
                             :telemetry="powerFlowEditorData.telemetry"
+                            :device-telemetry="powerFlowEditorData.device_telemetry"
                             :editable="false"
-                            :show-palette="true"
+                            :show-palette="false"
                         />
                     </GlassPanel>
                 </div>
@@ -43,29 +48,12 @@
                         class="dashboard-panel--chart"
                         title="태양광 발전 출력"
                         subtitle="오늘 시간대별 발전 추이"
-                        :value="`${formatNumber(summary?.solar.todayGenerationKwh)} kWh`"
+                        :value="`${formatNumber(summary?.solar.currentPowerKw)} kW`"
                     >
                         <TrendAreaChart
                             :data="solarHistory"
                             :capacity="summary?.project.solarCapacityKw ?? 0"
                             name="태양광 발전 출력"
-                            unit="kW"
-                        />
-                    </GlassPanel>
-
-                    <GlassPanel
-                        class="dashboard-panel--ess-chart"
-                        title="ESS 충전/방전 전력"
-                        subtitle="시간대별 PCS 전력 추이"
-                        :value="`충전 ${formatNumber(summary?.ess.chargePowerKw)} kW / 방전 ${formatNumber(
-                            summary?.ess.dischargePowerKw,
-                        )} kW`"
-                    >
-                        <DashboardPowerChart
-                            :first-points="essChargeHistory"
-                            :second-points="essDischargeHistory"
-                            first-name="충전"
-                            second-name="방전"
                             unit="kW"
                         />
                     </GlassPanel>
@@ -81,6 +69,23 @@
                             :second-points="gridImportHistory"
                             first-name="송전"
                             second-name="수전"
+                            unit="kW"
+                        />
+                    </GlassPanel>
+
+                    <GlassPanel
+                        class="dashboard-panel--ess-chart"
+                        title="ESS 충전/방전 전력"
+                        :value="`충전 ${formatNumber(summary?.ess.chargePowerKw)} kW / 방전 ${formatNumber(
+                            summary?.ess.dischargePowerKw,
+                        )} kW`"
+                    >
+                        <EssPowerChart
+                            :charge-data="essChargeHistory"
+                            :discharge-data="essDischargeHistory"
+                            :soc-data="essSocHistory"
+                            :left-split-number="2"
+                            :right-split-number="4"
                             unit="kW"
                         />
                     </GlassPanel>
@@ -105,7 +110,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { GlassPanel, TrendAreaChart } from '@/shared/components'
+import { EssPowerChart, GlassPanel, TrendAreaChart } from '@/shared/components'
 import PowerFlowCanvas from '@/features/powerFlow/components/PowerFlowCanvas.vue'
 import PowerFlowPalette from '@/features/powerFlow/components/PowerFlowPalette.vue'
 import type { PowerFlowEditorData, PowerFlowLayout } from '@/features/powerFlow/service/powerFlow.types'
@@ -126,6 +131,7 @@ const powerFlowLayout = ref<PowerFlowLayout | null>(null)
 const solarHistory = ref<DashboardTelemetryPoint[]>([])
 const essChargeHistory = ref<DashboardTelemetryPoint[]>([])
 const essDischargeHistory = ref<DashboardTelemetryPoint[]>([])
+const essSocHistory = ref<DashboardTelemetryPoint[]>([])
 const gridExportHistory = ref<DashboardTelemetryPoint[]>([])
 const gridImportHistory = ref<DashboardTelemetryPoint[]>([])
 let pollingTimer: number | undefined
@@ -259,6 +265,7 @@ const getDashboardData = async () => {
         solarHistoryRes,
         essChargeHistoryRes,
         essDischargeHistoryRes,
+        essSocHistoryRes,
         gridExportHistoryRes,
         gridImportHistoryRes,
     ] = await Promise.all([
@@ -268,6 +275,7 @@ const getDashboardData = async () => {
         dashboardApi.getTelemetryHistory('solar_power_kw'),
         dashboardApi.getTelemetryHistory('ess_charge_kw'),
         dashboardApi.getTelemetryHistory('ess_discharge_kw'),
+        dashboardApi.getTelemetryHistory('ess_soc'),
         dashboardApi.getTelemetryHistory('grid_export_kw'),
         dashboardApi.getTelemetryHistory('grid_import_kw'),
     ])
@@ -295,6 +303,10 @@ const getDashboardData = async () => {
 
     if (isSuccessResponse(essDischargeHistoryRes.result)) {
         essDischargeHistory.value = essDischargeHistoryRes.data
+    }
+
+    if (isSuccessResponse(essSocHistoryRes.result)) {
+        essSocHistory.value = essSocHistoryRes.data
     }
 
     if (isSuccessResponse(gridExportHistoryRes.result)) {
@@ -362,6 +374,9 @@ onBeforeUnmount(() => {
     gap: 14px;
     min-width: 0;
     min-height: 0;
+    :deep(.glass-panel__body) {
+        flex-direction: row;
+    }
 }
 
 .dashboard-panel--power-flow-devices {
@@ -373,26 +388,25 @@ onBeforeUnmount(() => {
     flex: 1 1 0;
     min-width: 0;
     min-height: 0;
+    :deep(.glass-panel__body) {
+        gap: 8px;
+    }
 }
 
 .dashboard-power-flow-palette {
-    flex: 1 1 auto;
-    width: 100%;
-    min-width: 0;
-    border-right: 0;
-    background: transparent;
-}
+    width: 220px;
+    padding: 0 2px 12px 4px;
+    border-right: none;
 
-.dashboard-power-flow-palette :deep(.power-flow-palette__header) {
-    display: none;
-}
-
-.dashboard-power-flow-palette :deep(.power-flow-palette__list) {
-    padding: 0 2px 2px 0;
-}
-
-.dashboard-power-flow-palette :deep(.power-flow-palette__item) {
-    cursor: default;
+    // :deep(.power-flow-palette__header) {
+    //     display: none;
+    // }
+    // :deep(.power-flow-palette__list) {
+    //     padding: 0 2px 2px 0;
+    // }
+    // :deep(.power-flow-palette__item) {
+    //     cursor: default;
+    // }
 }
 
 .dashboard-chart-row {
@@ -410,6 +424,9 @@ onBeforeUnmount(() => {
 
 .dashboard-panel--kpi {
     min-width: 0;
+}
+.dashboard-panel--kpi :deep(.glass-panel__body) {
+    justify-content: space-around !important;
 }
 
 @media (max-width: 1180px), (orientation: portrait) {

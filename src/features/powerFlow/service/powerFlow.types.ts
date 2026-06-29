@@ -65,6 +65,12 @@ export type PowerFlowEditorData = {
     layout: PowerFlowLayout
     devices: PowerFlowDeviceItem[]
     telemetry: Record<string, number>
+    device_telemetry: Record<string, Record<string, number>>
+}
+
+export type PowerFlowWireCurrentState = {
+    active: boolean
+    direction: PowerFlowDirection
 }
 
 export type PowerFlowLayoutSaveBody = Omit<PowerFlowLayout, 'id' | 'name'>

@@ -1,7 +1,6 @@
 <template>
     <section class="ess-page">
         <MetricCardRow :items="kpiItems" />
-
         <div class="ess-layout">
             <EssSystemListPanel
                 :systems="systems"
@@ -31,38 +30,36 @@
                     <div class="ess-chart-row">
                         <GlassPanel
                             class="ess-panel ess-panel--soc"
-                            title="ESS SOC 추이"
-                            subtitle="시간대별 배터리 충전율"
-                            :value="`${formatNumber(overview?.summary.soc)}%`"
+                            title="전압 / SOC"
+                            subtitle="배터리 충전율 및 전압"
+                            :value="`${formatNumber(overview?.summary.batteryVoltageV)} V / ${formatNumber(
+                                overview?.summary.soc,
+                            )}%`"
                         >
-                            <TrendAreaChart
-                                :data="overview?.history.soc ?? []"
-                                name="ESS SOC"
-                                unit="%"
-                                :show-peak="false"
-                                :line-width="2"
-                                show-line-glow
+                            <EssSocVoltageChart
+                                :soc-data="overview?.history.soc ?? []"
+                                :voltage-data="overview?.history.voltage ?? []"
+                                :voltage-min="overview?.limits.voltageMinV"
+                                :voltage-max="overview?.limits.voltageMaxV"
                             />
                         </GlassPanel>
 
                         <GlassPanel
                             class="ess-panel ess-panel--temperature"
-                            title="배터리 온도 추이"
-                            subtitle="BMS 측정 온도"
+                            title="배터리 온도"
+                            subtitle="랙별 평균 온도"
                             :value="`${formatNumber(overview?.summary.batteryTemperatureC)}°C`"
                         >
-                            <TrendAreaChart
-                                :data="overview?.history.temperature ?? []"
-                                name="배터리 온도"
-                                unit="°C"
-                                :show-peak="false"
-                                :line-width="2"
-                                show-line-glow
+                            <EssRackTemperatureChart
+                                :series="overview?.history.rackTemperatures ?? []"
+                                :warning-temperature="overview?.limits.temperatureWarningC"
+                                :fault-temperature="overview?.limits.temperatureFaultC"
                             />
                         </GlassPanel>
                     </div>
                 </div>
             </div>
+            <EssBatteryRackPanel :racks="overview?.batteryRacks ?? []" />
             <EssOperationSummaryPanel :overview="overview" />
         </div>
     </section>
@@ -70,11 +67,15 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { GlassPanel, MetricCardRow, TrendAreaChart } from '@/shared/components'
+import { GlassPanel, MetricCardRow } from '@/shared/components'
 import EssPowerChart from '@/shared/components/custom/EssPowerChart.vue'
 import { isSuccessResponse } from '@/shared/utils'
 import EssOperationSummaryPanel from './components/EssOperationSummaryPanel.vue'
 import EssSystemListPanel from './components/EssSystemListPanel.vue'
+import EssBatteryRackPanel from './components/EssBatteryRackPanel.vue'
+import EssSocVoltageChart from './components/EssSocVoltageChart.vue'
+import EssRackTemperatureChart from './components/EssRackTemperatureChart.vue'
+
 import essApi from './service/ess.api'
 import type { EssOverview, EssSystemItem, EssSystemSummary } from './service/ess.types'
 
@@ -220,7 +221,8 @@ onBeforeUnmount(() => {
 }
 
 .ess-detail {
-    width: 59.7%;
+    // width: 59.7%;
+    width: 39.5%;
     display: flex;
     gap: 14px;
     min-width: 0;
@@ -249,7 +251,7 @@ onBeforeUnmount(() => {
 }
 
 .ess-chart-row {
-    flex: 0 0 260px;
+    flex: 0 0 300px;
     display: flex;
     gap: 14px;
     min-height: 0;
@@ -258,6 +260,14 @@ onBeforeUnmount(() => {
 .ess-panel--soc,
 .ess-panel--temperature {
     flex: 1 1 0;
+}
+
+.ess-panel--soc {
+    :deep(.glass-panel__header strong) {
+        flex: 0 0 auto;
+        margin-left: auto;
+        text-align: right;
+    }
 }
 
 @media (max-width: 1180px), (orientation: portrait) {

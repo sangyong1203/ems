@@ -45,8 +45,24 @@ import type {
 
 const activeTab = ref('project')
 const saving = ref(false)
-const deviceCounts = ref<DeviceCounts>({ INVERTER: 0, PCS: 0, ESS_BATTERY: 0, BMS: 0, AC_PANEL: 0, METER: 0 })
-const activeDeviceCounts = ref<DeviceCounts>({ INVERTER: 0, PCS: 0, ESS_BATTERY: 0, BMS: 0, AC_PANEL: 0, METER: 0 })
+const deviceCounts = ref<DeviceCounts>({
+    INVERTER: 0,
+    PCS: 0,
+    ESS_BATTERY: 0,
+    BATTERY_RACK: 0,
+    BMS: 0,
+    AC_PANEL: 0,
+    METER: 0,
+})
+const activeDeviceCounts = ref<DeviceCounts>({
+    INVERTER: 0,
+    PCS: 0,
+    ESS_BATTERY: 0,
+    BATTERY_RACK: 0,
+    BMS: 0,
+    AC_PANEL: 0,
+    METER: 0,
+})
 const capacitySummary = ref<EquipmentCapacities>({
     solarInstalledKw: 0,
     solarOperatingKw: 0,

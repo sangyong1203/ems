@@ -1,6 +1,6 @@
-# TriggerX Vue Framework
+# Solar Vue Framework
 
-TriggerX 관리 화면을 위한 Vue 3 기반 프론트엔드 프로젝트입니다. Vite, TypeScript, Vue Router, Pinia, Element Plus, SCSS를 사용합니다.
+Solar 관리 화면을 위한 Vue 3 기반 프론트엔드 프로젝트입니다. Vite, TypeScript, Vue Router, Pinia, Element Plus, SCSS를 사용합니다.
 
 ## 개발 환경
 

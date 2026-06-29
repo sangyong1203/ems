@@ -7,9 +7,17 @@ from sqlalchemy.orm import Session
 
 from ..alarm.models import Alarm
 from ..device.models import Device
+from ..ess.models import EssSystem, EssSystemBatteryRack
 from ..maintenance.models import MaintenanceRecord
-from ..report.models import DailyReport
-from ..telemetry.models import TelemetryHistory, TelemetryLatest
+from ..report.models import DailyReport, EssDailyReport
+from ..telemetry.models import (
+    EssSystemTelemetryHistory,
+    EssSystemTelemetryLatest,
+    SiteTelemetryHistory,
+    SiteTelemetryLatest,
+    TelemetryHistory,
+    TelemetryLatest,
+)
 
 
 METRIC_UNITS = {
@@ -20,12 +28,21 @@ METRIC_UNITS = {
     "grid_export_kw": "kW",
     "grid_import_kw": "kW",
     "ess_soc": "%",
+    "ess_soc_avg": "%",
     "ess_soh": "%",
+    "ess_soh_avg": "%",
     "ess_charge_kw": "kW",
     "ess_discharge_kw": "kW",
     "battery_voltage_v": "V",
     "battery_current_a": "A",
     "battery_temperature_c": "℃",
+    "battery_temperature_avg_c": "℃",
+    "battery_rack_soc": "%",
+    "battery_rack_soh": "%",
+    "battery_rack_voltage_v": "V",
+    "battery_rack_current_a": "A",
+    "battery_rack_avg_temperature_c": "℃",
+    "battery_rack_max_temperature_c": "℃",
     "ambient_temperature_c": "℃",
     "pv_module_temperature_c": "℃",
     "inverter_temperature_c": "℃",
@@ -63,6 +80,56 @@ def _upsert_latest(db: Session, device_id: int | None, metric_key: str, value: f
     latest.measured_at = measured_at
 
 
+def _upsert_site_latest(db: Session, metric_key: str, value: float, measured_at: datetime) -> None:
+    latest = db.query(SiteTelemetryLatest).filter(SiteTelemetryLatest.metric_key == metric_key).first()
+    if latest is None:
+        db.add(
+            SiteTelemetryLatest(
+                metric_key=metric_key,
+                metric_value=value,
+                unit=METRIC_UNITS.get(metric_key),
+                measured_at=measured_at,
+            )
+        )
+        return
+
+    latest.metric_value = value
+    latest.unit = METRIC_UNITS.get(metric_key)
+    latest.measured_at = measured_at
+
+
+def _upsert_system_latest(
+    db: Session,
+    ess_system_id: int,
+    metric_key: str,
+    value: float,
+    measured_at: datetime,
+) -> None:
+    latest = (
+        db.query(EssSystemTelemetryLatest)
+        .filter(
+            EssSystemTelemetryLatest.ess_system_id == ess_system_id,
+            EssSystemTelemetryLatest.metric_key == metric_key,
+        )
+        .first()
+    )
+    if latest is None:
+        db.add(
+            EssSystemTelemetryLatest(
+                ess_system_id=ess_system_id,
+                metric_key=metric_key,
+                metric_value=value,
+                unit=METRIC_UNITS.get(metric_key),
+                measured_at=measured_at,
+            )
+        )
+        return
+
+    latest.metric_value = value
+    latest.unit = METRIC_UNITS.get(metric_key)
+    latest.measured_at = measured_at
+
+
 def _metric_device_id(metric_key: str, pcs: Device | None, bms: Device | None) -> int | None:
     if metric_key in {"ess_charge_kw", "ess_discharge_kw"}:
         return pcs.id if pcs else None
@@ -74,9 +141,14 @@ def _metric_device_id(metric_key: str, pcs: Device | None, bms: Device | None) -
 def reset_operational_data(db: Session) -> None:
     db.execute(delete(TelemetryLatest))
     db.execute(delete(TelemetryHistory))
+    db.execute(delete(SiteTelemetryLatest))
+    db.execute(delete(SiteTelemetryHistory))
+    db.execute(delete(EssSystemTelemetryLatest))
+    db.execute(delete(EssSystemTelemetryHistory))
     db.execute(delete(MaintenanceRecord))
     db.execute(delete(Alarm))
     db.execute(delete(DailyReport))
+    db.execute(delete(EssDailyReport))
     db.commit()
 
 
@@ -87,7 +159,12 @@ def generate_today(db: Session) -> dict:
 
     db.execute(delete(TelemetryLatest))
     db.execute(delete(TelemetryHistory))
+    db.execute(delete(SiteTelemetryLatest))
+    db.execute(delete(SiteTelemetryHistory))
+    db.execute(delete(EssSystemTelemetryLatest))
+    db.execute(delete(EssSystemTelemetryHistory))
     db.execute(delete(DailyReport).where(DailyReport.report_date == today_start.strftime("%Y-%m-%d")))
+    db.execute(delete(EssDailyReport).where(EssDailyReport.report_date == today_start.strftime("%Y-%m-%d")))
 
     total_generation = 0.0
     total_charge = 0.0
@@ -100,6 +177,14 @@ def generate_today(db: Session) -> dict:
     active_inverter_count = len([item for item in inverter_devices if item.is_active])
     pcs = next((item for item in devices if item.device_type == "PCS"), None)
     bms = next((item for item in devices if item.device_type == "BMS"), None)
+    ess_system = db.query(EssSystem).order_by(EssSystem.id.asc()).first()
+    battery_racks = (
+        db.query(Device)
+        .join(EssSystemBatteryRack, EssSystemBatteryRack.rack_device_id == Device.id)
+        .order_by(EssSystemBatteryRack.display_order.asc())
+        .all()
+    )
+    soc_samples: list[float] = []
 
     for hour in range(24):
         measured_at = today_start + timedelta(hours=hour)
@@ -124,13 +209,23 @@ def generate_today(db: Session) -> dict:
         pv_module_temperature = round(ambient_temperature + max(solar_power / 500, 0) * 18 + random.uniform(-1, 1), 1)
         inverter_temperature = round(ambient_temperature + max(solar_power / 500, 0) * 12 + random.uniform(-1, 1), 1)
 
-        values = {
+        site_values = {
             "solar_power_kw": solar_power,
             "solar_today_kwh": round(total_generation + solar_power, 1),
             "solar_total_kwh": round(128420 + total_generation + solar_power, 1),
             "load_power_kw": load_power,
             "grid_export_kw": grid_export,
             "grid_import_kw": grid_import,
+            "ess_charge_kw": ess_charge,
+            "ess_discharge_kw": ess_discharge,
+            "ess_soc_avg": soc,
+            "ess_soh_avg": 96.4,
+            "battery_temperature_avg_c": battery_temperature,
+            "ambient_temperature_c": ambient_temperature,
+            "pv_module_temperature_c": pv_module_temperature,
+            "inverter_temperature_c": inverter_temperature,
+        }
+        system_values = {
             "ess_soc": soc,
             "ess_soh": 96.4,
             "ess_charge_kw": ess_charge,
@@ -138,12 +233,37 @@ def generate_today(db: Session) -> dict:
             "battery_voltage_v": round(720 + soc * 1.6, 1),
             "battery_current_a": round((ess_charge - ess_discharge) * 1.35, 1),
             "battery_temperature_c": battery_temperature,
-            "ambient_temperature_c": ambient_temperature,
-            "pv_module_temperature_c": pv_module_temperature,
-            "inverter_temperature_c": inverter_temperature,
         }
+        legacy_values = {**site_values, **system_values}
 
-        for key, value in values.items():
+        for key, value in site_values.items():
+            db.add(
+                SiteTelemetryHistory(
+                    metric_key=key,
+                    metric_value=value,
+                    unit=METRIC_UNITS.get(key),
+                    measured_at=measured_at,
+                )
+            )
+            if measured_at <= now:
+                _upsert_site_latest(db, key, value, measured_at)
+
+        if ess_system is not None:
+            soc_samples.append(soc)
+            for key, value in system_values.items():
+                db.add(
+                    EssSystemTelemetryHistory(
+                        ess_system_id=ess_system.id,
+                        metric_key=key,
+                        metric_value=value,
+                        unit=METRIC_UNITS.get(key),
+                        measured_at=measured_at,
+                    )
+                )
+                if measured_at <= now:
+                    _upsert_system_latest(db, ess_system.id, key, value, measured_at)
+
+        for key, value in legacy_values.items():
             device_id = _metric_device_id(key, pcs, bms)
             db.add(
                 TelemetryHistory(
@@ -175,6 +295,43 @@ def generate_today(db: Session) -> dict:
             if index == 1 and hour == 11:
                 inverter.status = "WARNING"
 
+        rack_soc_offsets = [0.2, -0.8, -1.8, 0.2]
+        rack_voltage_offsets = [-0.3, -1.3, -3.3, 0.7]
+        rack_current_offsets = [0.3, 1.3, -0.7, 0.3]
+        rack_temperature_offsets = [-0.8, -0.4, 2.9, -0.6]
+        rack_temperature_spreads = [1.3, 1.8, 3.7, 1.8]
+        rack_current = (ess_discharge - ess_charge) * 1.35 / max(len(battery_racks), 1)
+        battery_voltage_value = float(system_values["battery_voltage_v"])
+
+        for index, rack in enumerate(battery_racks):
+            offset_index = index % len(rack_soc_offsets)
+            average_temperature = round(battery_temperature + rack_temperature_offsets[offset_index], 1)
+            rack_values = {
+                "battery_rack_soc": round(min(100, max(0, soc + rack_soc_offsets[offset_index])), 1),
+                "battery_rack_soh": [96.5, 96.4, 96.1, 96.6][offset_index],
+                "battery_rack_voltage_v": round(battery_voltage_value + rack_voltage_offsets[offset_index], 1),
+                "battery_rack_current_a": (
+                    round(rack_current + rack_current_offsets[offset_index], 1) if rack_current != 0 else 0
+                ),
+                "battery_rack_avg_temperature_c": average_temperature,
+                "battery_rack_max_temperature_c": round(
+                    average_temperature + rack_temperature_spreads[offset_index],
+                    1,
+                ),
+            }
+            for key, value in rack_values.items():
+                db.add(
+                    TelemetryHistory(
+                        device_id=rack.id,
+                        metric_key=key,
+                        metric_value=value,
+                        unit=METRIC_UNITS.get(key),
+                        measured_at=measured_at,
+                    )
+                )
+                if measured_at <= now:
+                    _upsert_latest(db, rack.id, key, value, measured_at)
+
         total_generation += solar_power
         total_charge += ess_charge
         total_discharge += ess_discharge
@@ -193,6 +350,21 @@ def generate_today(db: Session) -> dict:
             maintenance_count=2,
         )
     )
+    if ess_system is not None:
+        db.add(
+            EssDailyReport(
+                ess_system_id=ess_system.id,
+                report_date=today_start.strftime("%Y-%m-%d"),
+                ess_charge_kwh=round(total_charge, 1),
+                ess_discharge_kwh=round(total_discharge, 1),
+                total_throughput_kwh=round(total_charge + total_discharge, 1),
+                net_energy_kwh=round(total_charge - total_discharge, 1),
+                avg_soc=round(sum(soc_samples) / len(soc_samples), 1) if soc_samples else 0,
+                min_soc=round(min(soc_samples), 1) if soc_samples else 0,
+                max_soc=round(max(soc_samples), 1) if soc_samples else 0,
+                alarm_count=3,
+            )
+        )
 
     _generate_sample_alarms(db)
     _generate_sample_maintenance(db)
@@ -211,6 +383,7 @@ def generate_last_7_days(db: Session) -> dict:
         report_date = (today - timedelta(days=offset)).isoformat()
         factor = 0.88 + (offset % 4) * 0.05
         db.execute(delete(DailyReport).where(DailyReport.report_date == report_date))
+        db.execute(delete(EssDailyReport).where(EssDailyReport.report_date == report_date))
         db.add(
             DailyReport(
                 report_date=report_date,
@@ -223,6 +396,23 @@ def generate_last_7_days(db: Session) -> dict:
                 maintenance_count=1 if offset in (2, 5) else 0,
             )
         )
+        for system in db.query(EssSystem).all():
+            ess_charge = round(latest.ess_charge_kwh * factor, 1)
+            ess_discharge = round(latest.ess_discharge_kwh * (1.04 - offset * 0.02), 1)
+            db.add(
+                EssDailyReport(
+                    ess_system_id=system.id,
+                    report_date=report_date,
+                    ess_charge_kwh=ess_charge,
+                    ess_discharge_kwh=ess_discharge,
+                    total_throughput_kwh=round(ess_charge + ess_discharge, 1),
+                    net_energy_kwh=round(ess_charge - ess_discharge, 1),
+                    avg_soc=round(max(0, min(100, 72 + ((offset % 5) - 2) * 1.7)), 1),
+                    min_soc=round(max(0, min(100, 64 + ((offset % 4) - 2) * 1.5)), 1),
+                    max_soc=round(max(0, min(100, 82 + ((offset % 4) - 1) * 1.2)), 1),
+                    alarm_count=offset % 4,
+                )
+            )
     db.commit()
     return {"generatedAt": result["generatedAt"], "dayCount": 7}
 

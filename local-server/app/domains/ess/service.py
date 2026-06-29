@@ -2,13 +2,12 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from .models import EssSystem
-from .repository import first_ess_system, get_ess_system, list_ess_systems
+from .repository import first_ess_system, get_ess_system, list_battery_racks, list_ess_systems
 from ..device.models import Device
-from ..device.repository import first_device_by_type, get_device
+from ..device.repository import get_device
 from ..project.repository import get_project_config
-from ..report.repository import latest_daily_report
-from ..telemetry.models import TelemetryHistory, TelemetryLatest
-from ..telemetry.repository import history_by_metric, history_by_metric_any_device, latest_metric, latest_metric_any_device
+from ..report.repository import latest_ess_daily_report
+from ..telemetry.repository import history_by_metric, latest_metric, latest_system_metric, system_history_by_metric
 from ..telemetry.service import history_points, metric_time, metric_value
 
 
@@ -52,10 +51,10 @@ def _system_list_item(db: Session, system: EssSystem) -> dict:
     pcs = get_device(db, system.pcs_device_id) if system.pcs_device_id else None
     bms = get_device(db, system.bms_device_id) if system.bms_device_id else None
     battery = get_device(db, system.battery_device_id) if system.battery_device_id else None
-    soc = _metric_value_with_fallback(db, "ess_soc", _metric_device_id(bms, battery))
-    soh = _metric_value_with_fallback(db, "ess_soh", _metric_device_id(bms, battery))
-    charge_kw = _metric_value_with_fallback(db, "ess_charge_kw", _metric_device_id(pcs))
-    discharge_kw = _metric_value_with_fallback(db, "ess_discharge_kw", _metric_device_id(pcs))
+    soc = metric_value(latest_system_metric(db, system.id, "ess_soc"))
+    soh = metric_value(latest_system_metric(db, system.id, "ess_soh"))
+    charge_kw = metric_value(latest_system_metric(db, system.id, "ess_charge_kw"))
+    discharge_kw = metric_value(latest_system_metric(db, system.id, "ess_discharge_kw"))
     current_power = charge_kw or discharge_kw
 
     return {
@@ -75,29 +74,26 @@ def _system_list_item(db: Session, system: EssSystem) -> dict:
 
 def _build_ess_overview(db: Session, system: EssSystem) -> dict:
     project = get_project_config(db)
-    daily_report = latest_daily_report(db)
-    pcs = get_device(db, system.pcs_device_id) if system.pcs_device_id else first_device_by_type(db, "PCS")
-    bms = get_device(db, system.bms_device_id) if system.bms_device_id else first_device_by_type(db, "BMS")
-    battery = (
-        get_device(db, system.battery_device_id) if system.battery_device_id else first_device_by_type(db, "ESS_BATTERY")
-    )
+    daily_report = latest_ess_daily_report(db, system.id)
+    pcs = get_device(db, system.pcs_device_id) if system.pcs_device_id else None
+    bms = get_device(db, system.bms_device_id) if system.bms_device_id else None
+    battery = get_device(db, system.battery_device_id) if system.battery_device_id else None
 
-    pcs_device_id = _metric_device_id(pcs)
-    battery_metric_device_id = _metric_device_id(bms, battery)
-
-    soc = _latest_metric_with_fallback(db, "ess_soc", battery_metric_device_id)
-    soh = _latest_metric_with_fallback(db, "ess_soh", battery_metric_device_id)
-    charge_power = _latest_metric_with_fallback(db, "ess_charge_kw", pcs_device_id)
-    discharge_power = _latest_metric_with_fallback(db, "ess_discharge_kw", pcs_device_id)
-    battery_voltage = _latest_metric_with_fallback(db, "battery_voltage_v", battery_metric_device_id)
-    battery_current = _latest_metric_with_fallback(db, "battery_current_a", battery_metric_device_id)
-    battery_temperature = _latest_metric_with_fallback(db, "battery_temperature_c", battery_metric_device_id)
+    soc = latest_system_metric(db, system.id, "ess_soc")
+    soh = latest_system_metric(db, system.id, "ess_soh")
+    charge_power = latest_system_metric(db, system.id, "ess_charge_kw")
+    discharge_power = latest_system_metric(db, system.id, "ess_discharge_kw")
+    battery_voltage = latest_system_metric(db, system.id, "battery_voltage_v")
+    battery_current = latest_system_metric(db, system.id, "battery_current_a")
+    battery_temperature = latest_system_metric(db, system.id, "battery_temperature_c")
 
     charge_kw = metric_value(charge_power)
     discharge_kw = metric_value(discharge_power)
     system_status = _system_status(system, pcs, bms, battery)
     today_charge = round(float(daily_report.ess_charge_kwh if daily_report else 0), 1)
     today_discharge = round(float(daily_report.ess_discharge_kwh if daily_report else 0), 1)
+    total_throughput = round(float(daily_report.total_throughput_kwh if daily_report else 0), 1)
+    net_energy = round(float(daily_report.net_energy_kwh if daily_report else 0), 1)
 
     return {
         "refreshInterval": project.ess_refresh_interval if project else 5000,
@@ -129,8 +125,8 @@ def _build_ess_overview(db: Session, system: EssSystem) -> dict:
             "batteryTemperatureC": metric_value(battery_temperature),
             "todayChargeKwh": today_charge,
             "todayDischargeKwh": today_discharge,
-            "totalThroughputKwh": round(today_charge + today_discharge, 1),
-            "netEnergyKwh": round(today_charge - today_discharge, 1),
+            "totalThroughputKwh": total_throughput,
+            "netEnergyKwh": net_energy,
             "pcsStatus": pcs.status if pcs else "UNKNOWN",
             "bmsStatus": bms.status if bms else "UNKNOWN",
             "batteryStatus": battery.status if battery else "UNKNOWN",
@@ -139,15 +135,20 @@ def _build_ess_overview(db: Session, system: EssSystem) -> dict:
         "limits": {
             "socMin": 20,
             "socMax": 90,
+            "voltageMinV": 760,
+            "voltageMaxV": 880,
             "temperatureWarningC": 40,
             "temperatureFaultC": 50,
         },
         "history": {
-            "charge": _history_points_with_fallback(db, "ess_charge_kw", 24, pcs_device_id),
-            "discharge": _history_points_with_fallback(db, "ess_discharge_kw", 24, pcs_device_id),
-            "soc": _history_points_with_fallback(db, "ess_soc", 24, battery_metric_device_id),
-            "temperature": _history_points_with_fallback(db, "battery_temperature_c", 24, battery_metric_device_id),
+            "charge": history_points(system_history_by_metric(db, system.id, "ess_charge_kw", 24)),
+            "discharge": history_points(system_history_by_metric(db, system.id, "ess_discharge_kw", 24)),
+            "soc": history_points(system_history_by_metric(db, system.id, "ess_soc", 24)),
+            "voltage": history_points(system_history_by_metric(db, system.id, "battery_voltage_v", 24)),
+            "temperature": history_points(system_history_by_metric(db, system.id, "battery_temperature_c", 24)),
+            "rackTemperatures": _battery_rack_temperature_history(db, system),
         },
+        "batteryRacks": _battery_rack_items(db, system),
         "devices": {
             "pcs": _device_to_dict(pcs),
             "bms": _device_to_dict(bms),
@@ -156,34 +157,61 @@ def _build_ess_overview(db: Session, system: EssSystem) -> dict:
     }
 
 
-def _metric_device_id(*devices: Device | None) -> int | None:
-    for device in devices:
-        if device is not None:
-            return device.id
-    return None
+def _battery_rack_temperature_history(db: Session, system: EssSystem) -> list[dict]:
+    return [
+        {
+            "rackId": rack.id,
+            "rackNo": link.rack_no,
+            "rackName": rack.name,
+            "data": history_points(history_by_metric(db, "battery_rack_avg_temperature_c", 24, rack.id)),
+        }
+        for link, rack in list_battery_racks(db, system.id)
+    ]
 
 
-def _latest_metric_with_fallback(db: Session, metric_key: str, device_id: int | None) -> TelemetryLatest | None:
-    item = latest_metric(db, metric_key, device_id)
-    if item is not None:
-        return item
-    item = latest_metric(db, metric_key)
-    if item is not None:
-        return item
-    return latest_metric_any_device(db, metric_key)
+def _battery_rack_items(db: Session, system: EssSystem) -> list[dict]:
+    items: list[dict] = []
+    for link, rack in list_battery_racks(db, system.id):
+        metrics = {
+            "soc": latest_metric(db, "battery_rack_soc", rack.id),
+            "soh": latest_metric(db, "battery_rack_soh", rack.id),
+            "voltage": latest_metric(db, "battery_rack_voltage_v", rack.id),
+            "current": latest_metric(db, "battery_rack_current_a", rack.id),
+            "averageTemperature": latest_metric(db, "battery_rack_avg_temperature_c", rack.id),
+            "maxTemperature": latest_metric(db, "battery_rack_max_temperature_c", rack.id),
+        }
+        latest_items = [item for item in metrics.values() if item is not None]
+        latest_item = max(latest_items, key=lambda item: item.measured_at) if latest_items else None
+        max_temperature = metric_value(metrics["maxTemperature"])
+
+        items.append(
+            {
+                "id": rack.id,
+                "rackNo": link.rack_no,
+                "name": rack.name,
+                "status": _battery_rack_status(rack, max_temperature),
+                "isActive": rack.is_active,
+                "capacityKwh": round(float(rack.capacity or 0), 1),
+                "soc": metric_value(metrics["soc"]),
+                "soh": metric_value(metrics["soh"]),
+                "voltageV": metric_value(metrics["voltage"]),
+                "currentA": metric_value(metrics["current"]),
+                "averageTemperatureC": metric_value(metrics["averageTemperature"]),
+                "maxTemperatureC": max_temperature,
+                "updatedAt": metric_time(latest_item),
+            }
+        )
+    return items
 
 
-def _metric_value_with_fallback(db: Session, metric_key: str, device_id: int | None) -> float:
-    return metric_value(_latest_metric_with_fallback(db, metric_key, device_id))
-
-
-def _history_points_with_fallback(db: Session, metric_key: str, limit: int, device_id: int | None) -> list[dict]:
-    items = history_by_metric(db, metric_key, limit, device_id)
-    if not items:
-        items = history_by_metric(db, metric_key, limit)
-    if not items:
-        items = history_by_metric_any_device(db, metric_key, limit)
-    return history_points(items)
+def _battery_rack_status(rack: Device, max_temperature: float) -> str:
+    if not rack.is_active:
+        return "INACTIVE"
+    if rack.status == "FAULT" or max_temperature >= 50:
+        return "FAULT"
+    if rack.status in {"WARNING", "UNKNOWN"} or max_temperature >= 40:
+        return "WARNING"
+    return "NORMAL"
 
 
 def _ess_mode(charge_kw: float, discharge_kw: float) -> str:

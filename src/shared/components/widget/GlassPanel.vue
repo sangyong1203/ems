@@ -51,7 +51,7 @@ withDefaults(
 
 .glass-panel__header {
     display: flex;
-    align-items: flex-start;
+    align-items: start;
     justify-content: space-between;
     gap: 18px;
     margin-bottom: 14px;
@@ -71,6 +71,7 @@ withDefaults(
 .glass-panel__header strong {
     color: var(--secondary-color);
     white-space: nowrap;
+    margin-top: 2px;
 }
 
 .glass-panel__header-right {
@@ -109,8 +110,5 @@ withDefaults(
     flex-direction: column;
     min-width: 0;
     min-height: 0;
-    overflow: auto;
-    margin-right: -14px;
-    padding-right: 6px;
 }
 </style>

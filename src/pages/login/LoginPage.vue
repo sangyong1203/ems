@@ -4,7 +4,7 @@
             <div class="login-block-content">
                 <div class="login-header">
                     <!-- <logoMark class="logo-mark"></logoMark> -->
-                    <p class="login-header-content">Solar ESS</p>
+                    <p class="login-header-content">Solar</p>
                     <p>Energy Management System</p>
                 </div>
                 <div class="devide-line"></div>
@@ -273,7 +273,8 @@ const passwordReset = () => {
 
     &::after {
         inset: 0;
-        background: radial-gradient(circle at 58% 35%, rgba(255, 255, 255, 0.18), transparent 26%),
+        background:
+            radial-gradient(circle at 58% 35%, rgba(255, 255, 255, 0.18), transparent 26%),
             radial-gradient(circle at 30% 72%, rgba(42, 15, 66, 0.38), transparent 38%), rgba(4, 9, 17, 0.32);
     }
 
@@ -337,7 +338,8 @@ const passwordReset = () => {
 
     &::before {
         inset: 0;
-        background: linear-gradient(25deg, rgba(255, 255, 255, 0.22), transparent 42%),
+        background:
+            linear-gradient(25deg, rgba(255, 255, 255, 0.22), transparent 42%),
             radial-gradient(circle at -5% 0%, rgba(140, 129, 243, 0.22), transparent 22%);
     }
 }

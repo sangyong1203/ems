@@ -10,12 +10,7 @@
                 subtitle-position="right"
             >
                 <template #headerRight>
-                    <button
-                        v-if="!isEditMode"
-                        type="button"
-                        class="power-flow-header-button"
-                        @click="startEdit"
-                    >
+                    <button v-if="!isEditMode" type="button" class="power-flow-header-button" @click="startEdit">
                         편집
                     </button>
                     <template v-else>
@@ -26,13 +21,7 @@
                         >
                             취소
                         </button>
-                        <button
-                            type="button"
-                            class="power-flow-header-button"
-                            @click="saveEdit"
-                        >
-                            저장
-                        </button>
+                        <button type="button" class="power-flow-header-button" @click="saveEdit">저장</button>
                     </template>
                 </template>
                 <PowerFlowCanvas
@@ -40,6 +29,7 @@
                     :model-value="draftLayout"
                     :devices="editorData.devices"
                     :telemetry="editorData.telemetry"
+                    :device-telemetry="editorData.device_telemetry"
                     :editable="isEditMode"
                     @update:model-value="handleDraftLayoutChange"
                 />
@@ -59,9 +49,46 @@
                     title="운전 상태"
                     :subtitle="operationMode"
                 >
-                    <ProgressGauge class="power-flow-progress" :value="selfUseRate" :value-text="`${selfUseRate}%`" />
-                    <small class="power-flow-progress-label">PV 부하 공급률</small>
-                    <KeyValueList :items="balanceItems" />
+                    <div class="power-flow-balance">
+                        <div class="power-flow-balance__metric">
+                            <div class="power-flow-balance__metric-head">
+                                <small class="power-flow-progress-label">태양광 직접 소비율</small>
+                                <strong class="power-flow-balance__metric-value">{{ pvDirectUseRate }}%</strong>
+                            </div>
+                            <ProgressGauge class="power-flow-progress" :value="pvDirectUseRate" />
+                        </div>
+                        <div class="power-flow-balance__metric">
+                            <div class="power-flow-balance__metric-head">
+                                <small class="power-flow-progress-label">에너지 자립률</small>
+                                <strong class="power-flow-balance__metric-value">{{ energyIndependenceRate }}%</strong>
+                            </div>
+                            <ProgressGauge class="power-flow-progress" :value="energyIndependenceRate" />
+                        </div>
+                        <div class="power-flow-balance__stats">
+                            <div class="power-flow-balance__stat">
+                                <span class="power-flow-balance__stat-label">SOC</span>
+                                <strong class="power-flow-balance__stat-value">
+                                    {{ formatNumber(powerFlow?.nodes.ess.soc) }}%
+                                </strong>
+                            </div>
+                            <div class="power-flow-balance__stat">
+                                <span class="power-flow-balance__stat-label">SOH</span>
+                                <strong class="power-flow-balance__stat-value">
+                                    {{ formatNumber(powerFlow?.nodes.ess.soh) }}%
+                                </strong>
+                            </div>
+                            <div class="power-flow-balance__stat">
+                                <span class="power-flow-balance__stat-label">배터리 온도</span>
+                                <strong class="power-flow-balance__stat-value">
+                                    {{ formatNumber(powerFlow?.nodes.ess.temperatureC) }}℃
+                                </strong>
+                            </div>
+                            <div class="power-flow-balance__stat power-flow-balance__stat--status">
+                                <span class="power-flow-balance__stat-label">ESS 상태</span>
+                                <StatusBadge :label="essStatusText" :variant="essStatusVariant" min-width="64px" />
+                            </div>
+                        </div>
+                    </div>
                 </GlassPanel>
             </div>
         </div>
@@ -70,9 +97,13 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { GlassPanel, KeyValueList, MetricCardRow, ProgressGauge } from '@/shared/components'
+import { GlassPanel, KeyValueList, MetricCardRow, ProgressGauge, StatusBadge } from '@/shared/components'
 import PowerFlowCanvas from '@/features/powerFlow/components/PowerFlowCanvas.vue'
-import type { PowerFlowEditorData, PowerFlowLayout, PowerFlowLayoutSaveBody } from '@/features/powerFlow/service/powerFlow.types'
+import type {
+    PowerFlowEditorData,
+    PowerFlowLayout,
+    PowerFlowLayoutSaveBody,
+} from '@/features/powerFlow/service/powerFlow.types'
 import { isSuccessResponse } from '@/shared/utils'
 import powerFlowApi from './service/powerFlow.api'
 import type { PowerFlowData } from './service/powerFlow.types'
@@ -122,13 +153,41 @@ const operationMode = computed(() => {
     return '자체 공급 운전'
 })
 
-const selfUseRate = computed(() => {
+const pvDirectUseRate = computed(() => {
     const solarPower = powerFlow.value?.nodes.solar.powerKw ?? 0
     const solarToLoad = powerFlow.value?.flows.solarToLoadKw ?? 0
     if (solarPower <= 0) {
         return 0
     }
     return Math.min(100, Math.round((solarToLoad / solarPower) * 100))
+})
+
+const energyIndependenceRate = computed(() => {
+    const loadPower = powerFlow.value?.nodes.load.powerKw ?? 0
+    const solarToLoad = powerFlow.value?.flows.solarToLoadKw ?? 0
+    const essToLoad = powerFlow.value?.flows.essToLoadKw ?? 0
+    if (loadPower <= 0) {
+        return 0
+    }
+    return Math.min(100, Math.round(((solarToLoad + essToLoad) / loadPower) * 100))
+})
+
+const essStatusText = computed(() => {
+    return statusLabel(powerFlow.value?.nodes.ess.status)
+})
+
+const essStatusVariant = computed(() => {
+    const status = powerFlow.value?.nodes.ess.status
+    if (status === 'CHARGING') {
+        return 'progress'
+    }
+    if (status === 'DISCHARGING') {
+        return 'info'
+    }
+    if (status === 'STANDBY' || status === 'IDLE') {
+        return 'muted'
+    }
+    return 'muted'
 })
 
 const kpiItems = computed(() => [
@@ -161,10 +220,10 @@ const kpiItems = computed(() => [
         variant: 'is-grid',
     },
     {
-        label: 'PV 부하 공급률',
-        value: String(selfUseRate.value),
+        label: '태양광 직접 소비율',
+        value: String(pvDirectUseRate.value),
         unit: '%',
-        hint: 'PV → Load',
+        hint: 'PV → 부하 / PV 발전',
         variant: 'is-rate',
     },
 ])
@@ -176,12 +235,6 @@ const flowItems = computed(() => [
     { label: '계통 → 부하', value: `${formatNumber(powerFlow.value?.flows.gridImportKw)} kW` },
     { label: 'PV → 계통', value: `${formatNumber(powerFlow.value?.flows.solarToGridKw)} kW` },
     { label: 'ESS → 계통', value: `${formatNumber(powerFlow.value?.flows.essToGridKw)} kW` },
-])
-
-const balanceItems = computed(() => [
-    { label: 'ESS SOC', value: `${formatNumber(powerFlow.value?.nodes.ess.soc)}%` },
-    { label: 'ESS 충전', value: `${formatNumber(powerFlow.value?.nodes.ess.chargeKw)} kW` },
-    { label: 'ESS 방전', value: `${formatNumber(powerFlow.value?.nodes.ess.dischargeKw)} kW` },
 ])
 
 const statusLabel = (status?: string) => {
@@ -219,11 +272,13 @@ const getPowerFlow = async () => {
     }
 }
 
-const getEditor = async () => {
+const getEditor = async (syncDraftLayout = true) => {
     const res = await powerFlowApi.getEditor()
     if (isSuccessResponse(res.result)) {
         editorData.value = res.data
-        draftLayout.value = cloneLayout(res.data.layout)
+        if (syncDraftLayout) {
+            draftLayout.value = cloneLayout(res.data.layout)
+        }
     }
 }
 
@@ -269,6 +324,7 @@ const saveEdit = async () => {
 const startPolling = (interval: number) => {
     pollingTimer = window.setInterval(() => {
         getPowerFlow()
+        getEditor(false)
     }, interval)
 }
 
@@ -309,11 +365,7 @@ onBeforeUnmount(() => {
 
 .power-flow-panel--map {
     flex: 1;
-    padding: 0;
-}
-
-.power-flow-panel--map :deep(.glass-panel__header) {
-    padding: 20px 20px 0;
+    padding: 20px;
 }
 
 .power-flow-header-button {
@@ -346,18 +398,72 @@ onBeforeUnmount(() => {
     min-height: 0;
 }
 
-.power-flow-panel--summary,
 .power-flow-panel--balance {
-    flex: 1 1 0;
+    flex: 1;
 }
 
 .power-flow-panel--summary {
-    flex-grow: 0.9;
-    min-height: 330px;
+    height: 320px;
+}
+.power-flow-balance {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
-.power-flow-panel--balance {
-    flex-grow: 0.86;
+.power-flow-balance__metric {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.power-flow-balance__metric-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.power-flow-balance__metric-value {
+    color: var(--secondary-color);
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.power-flow-balance__stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding-top: 4px;
+}
+
+.power-flow-balance__stat {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.power-flow-balance__stat--status {
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.power-flow-balance__stat-label {
+    color: var(--text-color--secondary);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.power-flow-balance__stat-value {
+    color: var(--text-color--primary);
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1.1;
 }
 
 .grid-status-chip {
@@ -381,21 +487,20 @@ onBeforeUnmount(() => {
 }
 
 .power-flow-progress {
-    margin-bottom: 6px;
+    margin-bottom: 0;
 }
 
-.power-flow-progress :deep(span) {
-    color: var(--secondary-color);
-    font-size: 30px;
-    line-height: 34px;
+.power-flow-progress :deep(.progress-gauge) {
+    gap: 0;
 }
 
 .power-flow-progress-label {
     display: block;
-    margin-bottom: 18px;
+    margin-bottom: 0;
     color: var(--text-color--secondary);
-    font-size: 18px;
-    margin-top: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    margin-top: 0;
 }
 
 @media (max-width: 1180px), (orientation: portrait) {
@@ -426,6 +531,14 @@ onBeforeUnmount(() => {
         flex: 1 1 0;
         min-height: 300px;
     }
+
+    .power-flow-balance {
+        gap: 16px;
+    }
+
+    .power-flow-balance__stats {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 760px), (orientation: portrait) and (max-width: 900px) {
@@ -445,7 +558,6 @@ onBeforeUnmount(() => {
 
     .power-flow-panel--map :deep(.glass-panel__header) {
         align-items: flex-start;
-        flex-direction: column;
         gap: 10px;
     }
 }

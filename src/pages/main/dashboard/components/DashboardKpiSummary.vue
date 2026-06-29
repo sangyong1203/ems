@@ -72,10 +72,6 @@ defineProps<{
 </script>
 
 <style scoped lang="scss">
-.dashboard-kpi-summary {
-    min-height: 0;
-}
-
 .dashboard-kpi-summary__group-title {
     margin: 0 0 6px;
     color: var(--text-color--secondary);
@@ -152,11 +148,6 @@ defineProps<{
 
 .dashboard-kpi-summary__value.is-alarm {
     color: var(--primary-color);
-}
-
-.dashboard-kpi-summary__section {
-    padding-top: 14px;
-    margin-bottom: 20px;
 }
 
 .dashboard-kpi-summary__section-heading {

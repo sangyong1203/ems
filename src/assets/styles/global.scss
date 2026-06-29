@@ -70,6 +70,11 @@ body {
     height: 50%;
   }
 }
+.scroll-y{
+    overflow-y: scroll;
+    padding-right: 4px;
+    margin-right: -14px;
+}
 
 .table-actions {
   display: flex;

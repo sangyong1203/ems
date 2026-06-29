@@ -28,7 +28,8 @@
                                 :wire="wire"
                                 :path="wirePath(wire, layout.nodes, layout.junctions)"
                                 :tone="wireTone(wire, layout.nodes, layout.wires, devices)"
-                                :current-active="wireCurrentActiveForTelemetry(wire)"
+                                :current-active="wireCurrentStateForTelemetry(wire).active"
+                                :current-direction="wireCurrentStateForTelemetry(wire).direction"
                                 :selected="selectedWireId === wire.client_id"
                                 @select="selectWire"
                                 @split="splitWire"
@@ -84,7 +85,6 @@
             </button>
 
             <div v-if="editable && selectedWire" class="power-flow-canvas__toolbar">
-                <button type="button" title="전선 방향 변경" @click.stop="cycleSelectedWireDirection">↔</button>
                 <button
                     type="button"
                     :title="selectedWire.is_enabled ? '전선 비활성화' : '전선 활성화'"
@@ -160,7 +160,7 @@ import {
     anchorPoint,
     createClientId,
     endpointPoint,
-    wireCurrentActive,
+    wireCurrentState,
     wirePath,
     wireTone,
 } from '../service/powerFlow.utils'
@@ -195,6 +195,7 @@ const props = withDefaults(
         modelValue: PowerFlowLayout
         devices: PowerFlowDeviceItem[]
         telemetry?: Record<string, number>
+        deviceTelemetry?: Record<string, Record<string, number>>
         editable?: boolean
         showPalette?: boolean
     }>(),
@@ -231,8 +232,8 @@ const MAX_ZOOM = 2
 const ZOOM_STEP = 0.1
 const CONTENT_PADDING = 140
 const INITIAL_FIT_PADDING = 50
-const MIN_STAGE_WIDTH = 1600
-const MIN_STAGE_HEIGHT = 960
+const MIN_STAGE_WIDTH = 3200
+const MIN_STAGE_HEIGHT = 1920
 let resizeObserver: ResizeObserver | null = null
 let wheelListener: ((event: WheelEvent) => void) | null = null
 let keydownListener: ((event: KeyboardEvent) => void) | null = null
@@ -381,8 +382,15 @@ const stageStyle = computed(() => ({
 
 const zoomLabel = computed(() => `${Math.round(zoom.value * 100)}%`)
 
-const wireCurrentActiveForTelemetry = (wire: PowerFlowWireType) => {
-    return wireCurrentActive(wire, props.telemetry ?? {})
+const wireCurrentStateForTelemetry = (wire: PowerFlowWireType) => {
+    return wireCurrentState(
+        wire,
+        layout.value.nodes,
+        layout.value.wires,
+        props.devices,
+        props.telemetry ?? {},
+        props.deviceTelemetry ?? {},
+    )
 }
 
 const connectedAnchors = (nodeId: string): PowerFlowAnchor[] => {
@@ -526,6 +534,15 @@ const fitToContent = async () => {
 
     updateViewportSize()
     if (viewportSize.value.width === 0 || viewportSize.value.height === 0) {
+        return
+    }
+
+    if (layout.value.nodes.length === 0 && layout.value.junctions.length === 0) {
+        zoom.value = 1
+        await nextTick()
+
+        scrollRef.value.scrollLeft = Math.max(0, (stageWidth.value - viewportSize.value.width) / 2)
+        scrollRef.value.scrollTop = Math.max(0, (stageHeight.value - viewportSize.value.height) / 2)
         return
     }
 
@@ -869,20 +886,6 @@ const handleCanvasClick = () => {
         return
     }
     clearSelection()
-}
-
-const cycleSelectedWireDirection = () => {
-    if (!props.editable) {
-        return
-    }
-    if (!selectedWire.value) {
-        return
-    }
-    pushUndoSnapshot()
-    const directions = ['FORWARD', 'REVERSE', 'BIDIRECTIONAL'] as const
-    selectedWire.value.direction =
-        directions[(directions.indexOf(selectedWire.value.direction) + 1) % directions.length]
-    syncLayout()
 }
 
 const toggleSelectedWire = () => {

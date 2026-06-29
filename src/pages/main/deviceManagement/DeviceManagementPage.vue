@@ -21,8 +21,8 @@
                     </button>
                 </div>
 
-                <div class="device-toolbar">
-                    <div v-if="activeTab === 'devices'" class="device-toolbar__filters">
+                <TableToolbar>
+                    <template v-if="activeTab === 'devices'">
                         <SearchText
                             v-model="searchParams.keyword"
                             placeholder="장비명, 모델명, 위치 검색"
@@ -48,8 +48,8 @@
                             option-value="value"
                             @on-change="getDevices"
                         />
-                    </div>
-                    <div v-else class="device-toolbar__filters">
+                    </template>
+                    <template v-else>
                         <SearchText
                             v-model="pvStringSearchParams.keyword"
                             placeholder="스트링명, 위치, 인버터 검색"
@@ -75,8 +75,9 @@
                             option-value="value"
                             @on-change="getPvStrings"
                         />
-                    </div>
-                    <div class="device-toolbar__actions">
+                    </template>
+
+                    <template #actions>
                         <el-button
                             v-if="activeTab === 'devices'"
                             class="device-create-button"
@@ -87,8 +88,8 @@
                         <el-button v-else class="device-create-button" type="primary" @click="openCreatePvStringDialog">
                             스트링 등록
                         </el-button>
-                    </div>
-                </div>
+                    </template>
+                </TableToolbar>
 
                 <div v-if="activeTab === 'devices'" class="device-table-wrap">
                     <el-table
@@ -227,7 +228,15 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessageBox } from 'element-plus'
-import { DropdownList, GlassPanel, MetricCardRow, SearchText, StatusBadge, TableRowActions } from '@/shared/components'
+import {
+    DropdownList,
+    GlassPanel,
+    MetricCardRow,
+    SearchText,
+    StatusBadge,
+    TableRowActions,
+    TableToolbar,
+} from '@/shared/components'
 import { Message } from '@/shared/composables/useFeedback'
 import { isSuccessResponse } from '@/shared/utils'
 import DeviceDetailPanel from './components/DeviceDetailPanel.vue'
@@ -265,11 +274,14 @@ const deviceTypeFilterOptions = [
     { label: '전체 유형', value: '' },
     { label: '인버터', value: 'INVERTER' },
     { label: 'PCS', value: 'PCS' },
-    { label: 'ESS Battery', value: 'ESS_BATTERY' },
+    { label: '배터리 뱅크', value: 'ESS_BATTERY' },
+    { label: '배터리 랙', value: 'BATTERY_RACK' },
     { label: 'BMS', value: 'BMS' },
     { label: 'AC 배전반', value: 'AC_PANEL' },
-    { label: '계량기', value: 'METER' },
-    { label: '센서', value: 'SENSOR' },
+    { label: '계통 계량기', value: 'GRID_METER' },
+    { label: '부하 계량기', value: 'LOAD_METER' },
+    { label: '기상 센서', value: 'WEATHER_SENSOR' },
+    { label: '일반 센서', value: 'SENSOR' },
 ]
 
 const statusFilterOptions = [
@@ -340,11 +352,14 @@ const deviceTypeLabel = (value: string) => {
     const labels: Record<string, string> = {
         INVERTER: '인버터',
         PCS: 'PCS',
-        ESS_BATTERY: 'ESS Battery',
+        ESS_BATTERY: '배터리 뱅크',
+        BATTERY_RACK: '배터리 랙',
         BMS: 'BMS',
         AC_PANEL: 'AC 배전반',
-        METER: '계량기',
-        SENSOR: '센서',
+        GRID_METER: '계통 계량기',
+        LOAD_METER: '부하 계량기',
+        WEATHER_SENSOR: '기상 센서',
+        SENSOR: '일반 센서',
         ETC: '기타',
     }
     return labels[value] || value || '-'
@@ -578,14 +593,6 @@ onMounted(() => {
     min-width: 0;
 }
 
-.device-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-    margin-bottom: 14px;
-}
-
 .device-view-tabs {
     display: flex;
     align-items: center;
@@ -620,22 +627,6 @@ onMounted(() => {
     content: '';
 }
 
-.device-toolbar__filters,
-.device-toolbar__actions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.device-toolbar__filters {
-    flex-wrap: wrap;
-    min-width: 0;
-}
-
-.device-toolbar__actions {
-    flex: 0 0 auto;
-}
-
 .device-create-button {
     height: 32px;
     padding: 0 16px;
@@ -663,20 +654,15 @@ onMounted(() => {
         flex: 0 0 auto;
     }
 
-    .device-toolbar {
-        align-items: flex-start;
-        flex-wrap: wrap;
-    }
-
-    .device-toolbar__filters {
+    :deep(.table-toolbar__filters) {
         flex: 1 1 540px;
     }
 
-    :deep(.device-toolbar__filters .search-text) {
+    :deep(.table-toolbar__filters .search-text) {
         flex: 1 1 240px;
     }
 
-    :deep(.device-toolbar__filters .dropdown-list) {
+    :deep(.table-toolbar__filters .dropdown-list) {
         flex: 1 1 150px;
     }
 
@@ -695,17 +681,8 @@ onMounted(() => {
         margin-bottom: 10px;
     }
 
-    .device-toolbar {
-        gap: 10px;
-    }
-
-    .device-toolbar__filters,
-    .device-toolbar__actions {
-        width: 100%;
-    }
-
-    :deep(.device-toolbar__filters .search-text),
-    :deep(.device-toolbar__filters .dropdown-list) {
+    :deep(.table-toolbar__filters .search-text),
+    :deep(.table-toolbar__filters .dropdown-list) {
         flex: 1 1 100%;
         width: 100% !important;
     }

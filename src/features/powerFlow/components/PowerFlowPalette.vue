@@ -45,6 +45,9 @@ const displayValue = (device: PowerFlowDeviceItem) => {
     if (device.display_value == null) {
         return `#${device.id}`
     }
+    if (device.device_type === 'BATTERY_RACK') {
+        return `${device.display_value.toLocaleString(undefined, { maximumFractionDigits: 1 })}%`
+    }
     return `${device.display_value.toLocaleString(undefined, { maximumFractionDigits: 1 })} ${device.display_unit ?? ''}`.trim()
 }
 
@@ -69,7 +72,7 @@ const handleDragStart = (event: DragEvent, device: PowerFlowDeviceItem) => {
     min-height: 0;
     overflow: hidden;
     border-right: 1px solid var(--border-color);
-    background: rgba(7, 12, 22, 0.38);
+    background: rgba(7, 12, 22, 0.4);
     padding-bottom: 12px;
 }
 

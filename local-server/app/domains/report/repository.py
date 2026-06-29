@@ -1,13 +1,22 @@
 ﻿from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from .models import DailyReport
+from .models import DailyReport, EssDailyReport
 from ..alarm.models import Alarm
 from ..telemetry.models import TelemetryLatest
 
 
 def latest_daily_report(db: Session) -> DailyReport | None:
     return db.query(DailyReport).order_by(DailyReport.report_date.desc()).first()
+
+
+def latest_ess_daily_report(db: Session, ess_system_id: int) -> EssDailyReport | None:
+    return (
+        db.query(EssDailyReport)
+        .filter(EssDailyReport.ess_system_id == ess_system_id)
+        .order_by(EssDailyReport.report_date.desc())
+        .first()
+    )
 
 
 def get_daily_report(db: Session, report_date: str = "") -> DailyReport | None:

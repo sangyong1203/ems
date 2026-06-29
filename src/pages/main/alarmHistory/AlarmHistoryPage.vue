@@ -4,61 +4,59 @@
 
         <div class="alarm-history-content">
             <GlassPanel class="alarm-panel alarm-panel--list" title="알림 이력" :value="`${alarms.length}건`">
-                <div class="alarm-toolbar">
-                    <div class="alarm-toolbar__filters">
-                        <SearchText
-                            v-model="searchParams.keyword"
-                            placeholder="장비명, 유형, 메시지 검색"
-                            width="220px"
-                            @on-enter="getAlarms"
-                        />
-                        <DropdownList
-                            v-model="searchParams.deviceId"
-                            placeholder="대상 장비"
-                            width="130px"
-                            :list="deviceFilterOptions"
-                            option-label="label"
-                            option-value="value"
-                            @on-change="getAlarms"
-                        />
-                        <DropdownList
-                            v-model="searchParams.severity"
-                            placeholder="등급"
-                            width="95px"
-                            :list="severityFilterOptions"
-                            option-label="label"
-                            option-value="value"
-                            @on-change="getAlarms"
-                        />
-                        <DropdownList
-                            v-model="searchParams.alarmType"
-                            placeholder="알림 유형"
-                            width="120px"
-                            :list="alarmTypeFilterOptions"
-                            option-label="label"
-                            option-value="value"
-                            @on-change="getAlarms"
-                        />
-                        <DropdownList
-                            v-model="searchParams.status"
-                            placeholder="조치 상태"
-                            width="120px"
-                            :list="statusFilterOptions"
-                            option-label="label"
-                            option-value="value"
-                            @on-change="getAlarms"
-                        />
-                        <el-date-picker
-                            v-model="dateRange"
-                            class="alarm-date-range"
-                            type="daterange"
-                            value-format="YYYY-MM-DD"
-                            start-placeholder="시작일"
-                            end-placeholder="종료일"
-                            @change="changeDateRange"
-                        />
-                    </div>
-                </div>
+                <TableToolbar>
+                    <SearchText
+                        v-model="searchParams.keyword"
+                        placeholder="장비명, 유형, 메시지 검색"
+                        width="220px"
+                        @on-enter="getAlarms"
+                    />
+                    <DropdownList
+                        v-model="searchParams.deviceId"
+                        placeholder="대상 장비"
+                        width="130px"
+                        :list="deviceFilterOptions"
+                        option-label="label"
+                        option-value="value"
+                        @on-change="getAlarms"
+                    />
+                    <DropdownList
+                        v-model="searchParams.severity"
+                        placeholder="등급"
+                        width="95px"
+                        :list="severityFilterOptions"
+                        option-label="label"
+                        option-value="value"
+                        @on-change="getAlarms"
+                    />
+                    <DropdownList
+                        v-model="searchParams.alarmType"
+                        placeholder="알림 유형"
+                        width="120px"
+                        :list="alarmTypeFilterOptions"
+                        option-label="label"
+                        option-value="value"
+                        @on-change="getAlarms"
+                    />
+                    <DropdownList
+                        v-model="searchParams.status"
+                        placeholder="조치 상태"
+                        width="120px"
+                        :list="statusFilterOptions"
+                        option-label="label"
+                        option-value="value"
+                        @on-change="getAlarms"
+                    />
+                    <el-date-picker
+                        v-model="dateRange"
+                        class="alarm-date-range"
+                        type="daterange"
+                        value-format="YYYY-MM-DD"
+                        start-placeholder="시작일"
+                        end-placeholder="종료일"
+                        @change="changeDateRange"
+                    />
+                </TableToolbar>
 
                 <div class="alarm-table-wrap">
                     <el-table
@@ -122,7 +120,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { DropdownList, GlassPanel, MetricCardRow, SearchText, StatusBadge } from '@/shared/components'
+import { DropdownList, GlassPanel, MetricCardRow, SearchText, StatusBadge, TableToolbar } from '@/shared/components'
 import { isSuccessResponse } from '@/shared/utils'
 import AlarmDetailPanel from './components/AlarmDetailPanel.vue'
 import AlarmRowActions from './components/AlarmRowActions.vue'
@@ -135,7 +133,7 @@ const deviceOptions = ref<AlarmDeviceOption[]>([])
 
 const searchParams = reactive({
     keyword: '',
-    deviceId: null as number | null,
+    deviceId: '' as number | '',
     severity: '',
     alarmType: '',
     status: '',
@@ -174,7 +172,7 @@ const alarmTypeOptions = [
 ]
 
 const deviceFilterOptions = computed(() => [
-    { label: '전체 장비', value: null },
+    { label: '전체 장비', value: '' },
     ...deviceOptions.value.map(item => ({ label: item.name, value: item.id })),
 ])
 const severityFilterOptions = computed(() => [{ label: '전체 등급', value: '' }, ...severityOptions])
@@ -263,7 +261,10 @@ const getDevices = async () => {
 }
 
 const getAlarms = async () => {
-    const res = await alarmHistoryApi.getList(searchParams)
+    const res = await alarmHistoryApi.getList({
+        ...searchParams,
+        deviceId: searchParams.deviceId || undefined,
+    })
     if (isSuccessResponse(res.result)) {
         alarms.value = res.data.list
         if (!alarms.value.length) {
@@ -338,22 +339,6 @@ onMounted(async () => {
     min-width: 0;
 }
 
-.alarm-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-    margin-bottom: 14px;
-}
-
-.alarm-toolbar__filters {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-    min-width: 0;
-}
-
 :deep(.alarm-date-range) {
     flex: 1;
     max-width: 360px !important;
@@ -382,19 +367,15 @@ onMounted(async () => {
         flex: 0 0 auto;
     }
 
-    .alarm-toolbar {
-        align-items: stretch;
-    }
-
-    .alarm-toolbar__filters {
+    :deep(.table-toolbar__filters) {
         width: 100%;
     }
 
-    :deep(.alarm-toolbar__filters .search-text) {
+    :deep(.table-toolbar__filters .search-text) {
         flex: 1 1 220px;
     }
 
-    :deep(.alarm-toolbar__filters .dropdown-list) {
+    :deep(.table-toolbar__filters .dropdown-list) {
         flex: 1 1 120px;
     }
 
@@ -414,12 +395,12 @@ onMounted(async () => {
         padding: 8px;
     }
 
-    .alarm-toolbar__filters {
+    :deep(.table-toolbar__filters) {
         gap: 8px;
     }
 
-    :deep(.alarm-toolbar__filters .search-text),
-    :deep(.alarm-toolbar__filters .dropdown-list),
+    :deep(.table-toolbar__filters .search-text),
+    :deep(.table-toolbar__filters .dropdown-list),
     :deep(.alarm-date-range) {
         flex: 1 1 100%;
         width: 100% !important;

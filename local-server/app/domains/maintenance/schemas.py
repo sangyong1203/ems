@@ -31,9 +31,14 @@ class MaintenanceSaveBody(BaseModel):
     maintenance_type: str
     title: str
     description: str | None = None
+    cause: str | None = None
     action_taken: str | None = None
+    before_status: str | None = None
+    after_status: str | None = None
     status: str = "SCHEDULED"
     maintenance_date: str | None = None
     next_maintenance_date: str | None = None
     manager_name: str | None = None
+    contractor_name: str | None = None
+    cost: float | None = None
     memo: str | None = None

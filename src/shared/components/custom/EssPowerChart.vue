@@ -11,12 +11,20 @@ export type EssPowerChartPoint = {
     metric_value: number
 }
 
-const props = defineProps<{
-    chargeData: EssPowerChartPoint[]
-    dischargeData: EssPowerChartPoint[]
-    socData: EssPowerChartPoint[]
-    unit: string
-}>()
+const props = withDefaults(
+    defineProps<{
+        chargeData: EssPowerChartPoint[]
+        dischargeData: EssPowerChartPoint[]
+        socData: EssPowerChartPoint[]
+        unit: string
+        leftSplitNumber?: number
+        rightSplitNumber?: number
+    }>(),
+    {
+        leftSplitNumber: 4,
+        rightSplitNumber: 5,
+    },
+)
 
 const chartRef = ref<HTMLDivElement | null>(null)
 let chart: echarts.ECharts | null = null
@@ -65,7 +73,7 @@ const drawChart = () => {
         grid: {
             top: 52,
             right: 48,
-            bottom: 30,
+            bottom: 20,
             left: 56,
         },
         tooltip: {
@@ -95,10 +103,11 @@ const drawChart = () => {
                 nameGap: 16,
                 min: -powerAxisMax.value,
                 max: powerAxisMax.value,
-                interval: powerAxisMax.value / 4,
+                splitNumber: props.leftSplitNumber,
+                interval: powerAxisMax.value / props.leftSplitNumber,
                 nameTextStyle: {
                     color: '#c9c1d4',
-                    fontSize: 10,
+                    fontSize: 11,
                     align: 'right',
                     padding: [0, 0, 0, 0],
                 },
@@ -117,7 +126,8 @@ const drawChart = () => {
                 nameGap: 14,
                 min: 0,
                 max: 100,
-                interval: 20,
+                splitNumber: props.rightSplitNumber,
+                interval: 100 / props.rightSplitNumber,
                 nameTextStyle: {
                     color: '#c9c1d4',
                     fontSize: 12,
@@ -177,7 +187,7 @@ const drawChart = () => {
 }
 
 watch(
-    () => [props.chargeData, props.dischargeData, props.socData],
+    () => [props.chargeData, props.dischargeData, props.socData, props.leftSplitNumber, props.rightSplitNumber],
     () => {
         drawChart()
     },

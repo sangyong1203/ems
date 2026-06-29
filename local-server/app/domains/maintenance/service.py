@@ -5,6 +5,7 @@ from .repository import (
     create_maintenance,
     delete_maintenance,
     get_maintenance,
+    get_maintenance_with_device,
     list_maintenance,
     update_maintenance,
 )
@@ -33,22 +34,23 @@ def get_maintenance_list(
 
 
 def get_maintenance_detail(db: Session, maintenance_id: int) -> dict:
-    item = get_maintenance(db, maintenance_id)
-    if item is None:
+    result = get_maintenance_with_device(db, maintenance_id)
+    if result is None:
         raise HTTPException(status_code=404, detail="Maintenance not found")
-    return _maintenance_to_dict(item)
+    item, device = result
+    return _maintenance_to_dict(item, device)
 
 
 def add_maintenance(db: Session, body: MaintenanceSaveBody) -> dict:
     item = create_maintenance(db, body.model_dump())
-    return _maintenance_to_dict(item)
+    return get_maintenance_detail(db, item.id)
 
 
 def save_maintenance(db: Session, maintenance_id: int, body: MaintenanceSaveBody) -> dict:
     item = update_maintenance(db=db, maintenance_id=maintenance_id, payload=body.model_dump())
     if item is None:
         raise HTTPException(status_code=404, detail="Maintenance not found")
-    return _maintenance_to_dict(item)
+    return get_maintenance_detail(db, item.id)
 
 
 def remove_maintenance(db: Session, maintenance_id: int) -> dict:

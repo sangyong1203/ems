@@ -1,19 +1,21 @@
 ﻿from sqlalchemy.orm import Session
 
 from ..project.repository import get_project_config
-from ..telemetry.repository import latest_map
+from ..telemetry.repository import latest_site_map
 from ..telemetry.service import telemetry_time, telemetry_value
 
 
 def get_power_flow_overview(db: Session) -> dict:
     project = get_project_config(db)
-    latest = latest_map(db)
+    latest = latest_site_map(db)
     power_flow = calculate_power_flow(
         solar_power=telemetry_value(latest, "solar_power_kw"),
         load_power=telemetry_value(latest, "load_power_kw"),
         ess_charge=telemetry_value(latest, "ess_charge_kw"),
         ess_discharge=telemetry_value(latest, "ess_discharge_kw"),
-        ess_soc=telemetry_value(latest, "ess_soc"),
+        ess_soc=telemetry_value(latest, "ess_soc_avg"),
+        ess_soh=telemetry_value(latest, "ess_soh_avg"),
+        battery_temperature=telemetry_value(latest, "battery_temperature_avg_c"),
         ess_grid_export_enabled=False,
     )
 
@@ -30,6 +32,8 @@ def calculate_power_flow(
     ess_charge: float,
     ess_discharge: float,
     ess_soc: float,
+    ess_soh: float,
+    battery_temperature: float,
     ess_grid_export_enabled: bool,
 ) -> dict:
     solar_to_load = min(solar_power, load_power)
@@ -58,6 +62,8 @@ def calculate_power_flow(
                 "chargeKw": solar_to_ess,
                 "dischargeKw": ess_to_load + ess_to_grid,
                 "soc": ess_soc,
+                "soh": ess_soh,
+                "temperatureC": battery_temperature,
                 "status": _ess_status(solar_to_ess, ess_discharge),
             },
             "load": {"label": "부하", "powerKw": load_power, "status": "CONSUMING"},

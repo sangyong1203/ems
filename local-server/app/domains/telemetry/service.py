@@ -3,7 +3,7 @@
 from sqlalchemy.orm import Session
 
 from .models import TelemetryHistory, TelemetryLatest
-from .repository import history_by_metric, latest_map
+from .repository import history_by_metric, history_by_metric_any_device, latest_map
 from .schemas import TelemetryOut
 
 
@@ -33,7 +33,8 @@ def history_points(items: list[TelemetryHistory]) -> list[dict]:
     return [
         {
             "id": item.id,
-            "device_id": item.device_id,
+            "device_id": getattr(item, "device_id", None),
+            "ess_system_id": getattr(item, "ess_system_id", None),
             "metric_key": item.metric_key,
             "metric_value": round(float(item.metric_value), 1),
             "unit": item.unit,
@@ -49,6 +50,8 @@ def get_latest_telemetry(db: Session) -> list[dict]:
 
 def get_telemetry_history(db: Session, metric_key: str = "solar_power_kw", limit: int = 48) -> list[dict]:
     items = history_by_metric(db, metric_key, limit)
+    if not items:
+        items = history_by_metric_any_device(db, metric_key, limit)
     return [TelemetryOut.model_validate(item).model_dump() for item in reversed(items)]
 
 

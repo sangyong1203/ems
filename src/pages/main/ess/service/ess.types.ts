@@ -43,6 +43,29 @@ export type EssSystemSummary = {
     currentPowerKw: number
 }
 
+export type EssBatteryRack = {
+    id: number
+    rackNo: number
+    name: string
+    status: string
+    isActive: boolean
+    capacityKwh: number
+    soc: number
+    soh: number
+    voltageV: number
+    currentA: number
+    averageTemperatureC: number
+    maxTemperatureC: number
+    updatedAt: string | null
+}
+
+export type EssRackTemperatureHistory = {
+    rackId: number
+    rackNo: number
+    rackName: string
+    data: EssTelemetryPoint[]
+}
+
 export type EssOverview = {
     refreshInterval: number
     project: {
@@ -83,6 +106,8 @@ export type EssOverview = {
     limits: {
         socMin: number
         socMax: number
+        voltageMinV: number
+        voltageMaxV: number
         temperatureWarningC: number
         temperatureFaultC: number
     }
@@ -90,8 +115,11 @@ export type EssOverview = {
         charge: EssTelemetryPoint[]
         discharge: EssTelemetryPoint[]
         soc: EssTelemetryPoint[]
+        voltage: EssTelemetryPoint[]
         temperature: EssTelemetryPoint[]
+        rackTemperatures: EssRackTemperatureHistory[]
     }
+    batteryRacks: EssBatteryRack[]
     devices: {
         pcs: EssDevice
         bms: EssDevice

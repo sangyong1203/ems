@@ -59,11 +59,14 @@ const actionStatusLabels: Record<string, string> = {
 const deviceTypeLabels: Record<string, string> = {
     INVERTER: '인버터',
     PCS: 'PCS',
-    ESS_BATTERY: 'ESS Battery',
+    ESS_BATTERY: '배터리 뱅크',
+    BATTERY_RACK: '배터리 랙',
     BMS: 'BMS',
     AC_PANEL: 'AC 배전반',
-    METER: '계량기',
-    SENSOR: '센서',
+    GRID_METER: '계통 계량기',
+    LOAD_METER: '부하 계량기',
+    WEATHER_SENSOR: '기상 센서',
+    SENSOR: '일반 센서',
     ETC: '기타',
 }
 

@@ -2,12 +2,12 @@
     <g class="power-flow-wire" :class="[`is-${tone}`, { 'is-selected': selected }]">
         <path class="power-flow-wire__hit" :d="path" @click.stop="emit('select', wire.client_id)" @dblclick.stop="emit('split', $event, wire.client_id)" />
         <path class="power-flow-wire__line" :d="path" />
-        <path v-if="currentActive" class="power-flow-wire__current" :class="`is-${wire.direction.toLowerCase()}`" :d="path" />
+        <path v-if="currentActive" class="power-flow-wire__current" :class="`is-${currentDirection.toLowerCase()}`" :d="path" />
     </g>
 </template>
 
 <script setup lang="ts">
-import type { PowerFlowWire, PowerFlowWireTone } from '../service/powerFlow.types'
+import type { PowerFlowDirection, PowerFlowWire, PowerFlowWireTone } from '../service/powerFlow.types'
 
 defineProps<{
     wire: PowerFlowWire
@@ -15,6 +15,7 @@ defineProps<{
     tone: PowerFlowWireTone
     selected: boolean
     currentActive: boolean
+    currentDirection: PowerFlowDirection
 }>()
 
 const emit = defineEmits<{

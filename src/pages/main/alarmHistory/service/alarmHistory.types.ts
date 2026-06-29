@@ -24,7 +24,7 @@ export type AlarmItem = {
 
 export type AlarmSearchParams = {
     keyword?: string
-    deviceId?: number | null
+    deviceId?: number
     severity?: string
     alarmType?: string
     status?: string

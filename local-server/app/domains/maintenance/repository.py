@@ -52,6 +52,15 @@ def get_maintenance(db: Session, maintenance_id: int) -> MaintenanceRecord | Non
     return db.query(MaintenanceRecord).filter(MaintenanceRecord.id == maintenance_id).first()
 
 
+def get_maintenance_with_device(db: Session, maintenance_id: int) -> tuple[MaintenanceRecord, Device | None] | None:
+    return (
+        db.query(MaintenanceRecord, Device)
+        .outerjoin(Device, MaintenanceRecord.device_id == Device.id)
+        .filter(MaintenanceRecord.id == maintenance_id)
+        .first()
+    )
+
+
 def create_maintenance(db: Session, payload: dict) -> MaintenanceRecord:
     item = MaintenanceRecord(**payload)
     db.add(item)

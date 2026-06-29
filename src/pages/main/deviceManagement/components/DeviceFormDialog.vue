@@ -192,11 +192,14 @@ const selectedPvStringId = ref<number | null>(null)
 const deviceTypeOptions = [
     { label: '인버터', value: 'INVERTER' },
     { label: 'PCS', value: 'PCS' },
-    { label: 'ESS Battery', value: 'ESS_BATTERY' },
+    { label: '배터리 뱅크', value: 'ESS_BATTERY' },
+    { label: '배터리 랙', value: 'BATTERY_RACK' },
     { label: 'BMS', value: 'BMS' },
     { label: 'AC 배전반', value: 'AC_PANEL' },
-    { label: '계량기', value: 'METER' },
-    { label: '센서', value: 'SENSOR' },
+    { label: '계통 계량기', value: 'GRID_METER' },
+    { label: '부하 계량기', value: 'LOAD_METER' },
+    { label: '기상 센서', value: 'WEATHER_SENSOR' },
+    { label: '일반 센서', value: 'SENSOR' },
     { label: '기타', value: 'ETC' },
 ]
 
@@ -234,7 +237,7 @@ const createDefaultForm = (): DeviceSaveParams => ({
 
 const form = reactive<DeviceSaveParams>(createDefaultForm())
 
-const isSensorType = computed(() => form.device_type === 'SENSOR')
+const isSensorType = computed(() => ['WEATHER_SENSOR', 'SENSOR'].includes(form.device_type))
 const capacityLabel = computed(() => (isSensorType.value ? '측정 범위' : '정격 용량'))
 const capacityUnitLabel = computed(() => (isSensorType.value ? '측정 단위' : '용량 단위'))
 const capacityUnitPlaceholder = computed(() => (isSensorType.value ? '°C, W/m², V' : 'kW, kWh'))

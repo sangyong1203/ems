@@ -4,39 +4,41 @@
         :title="overview?.system.name || 'ESS 운영 요약'"
         :value="statusLabel(overview?.summary.systemStatus)"
     >
-        <h3 class="ess-summary-title">ESS 운영 요약</h3>
+        <div class="scroll-y">
+            <h3 class="ess-summary-title">ESS 운영 요약</h3>
 
-        <div class="ess-summary-kpis">
-            <article>
-                <span>SOC</span>
-                <strong>{{ formatNumber(overview?.summary.soc) }}%</strong>
-            </article>
-            <article>
-                <span>SOH</span>
-                <strong>{{ formatNumber(overview?.summary.soh) }}%</strong>
-            </article>
-            <article>
-                <span>충전</span>
-                <strong>{{ formatNumber(overview?.summary.chargePowerKw) }} kW</strong>
-            </article>
-            <article>
-                <span>방전</span>
-                <strong>{{ formatNumber(overview?.summary.dischargePowerKw) }} kW</strong>
-            </article>
+            <div class="ess-summary-kpis">
+                <article>
+                    <span>SOC</span>
+                    <strong>{{ formatNumber(overview?.summary.soc) }}%</strong>
+                </article>
+                <article>
+                    <span>SOH</span>
+                    <strong>{{ formatNumber(overview?.summary.soh) }}%</strong>
+                </article>
+                <article>
+                    <span>충전</span>
+                    <strong>{{ formatNumber(overview?.summary.chargePowerKw) }} kW</strong>
+                </article>
+                <article>
+                    <span>방전</span>
+                    <strong>{{ formatNumber(overview?.summary.dischargePowerKw) }} kW</strong>
+                </article>
+            </div>
+
+            <KeyValueList :items="operationItems" style="min-height: 190px; margin-top: 20px" />
+
+            <section class="ess-device-section">
+                <h3>장비 상태</h3>
+                <article v-for="device in deviceItems" :key="device.label" class="ess-device-card">
+                    <div>
+                        <span>{{ device.label }}</span>
+                        <strong>{{ device.name }}</strong>
+                    </div>
+                    <em :class="statusClass(device.status)">{{ statusLabel(device.status) }}</em>
+                </article>
+            </section>
         </div>
-
-        <KeyValueList :items="operationItems" style="min-height: 190px; margin-top: 12px" />
-
-        <section class="ess-device-section">
-            <h3>장비 상태</h3>
-            <article v-for="device in deviceItems" :key="device.label" class="ess-device-card">
-                <div>
-                    <span>{{ device.label }}</span>
-                    <strong>{{ device.name }}</strong>
-                </div>
-                <em :class="statusClass(device.status)">{{ statusLabel(device.status) }}</em>
-            </article>
-        </section>
     </GlassPanel>
 </template>
 
@@ -97,7 +99,7 @@ const deviceItems = computed(() => [
     { label: 'PCS', name: props.overview?.devices.pcs.name || '-', status: props.overview?.devices.pcs.status },
     { label: 'BMS', name: props.overview?.devices.bms.name || '-', status: props.overview?.devices.bms.status },
     {
-        label: 'Battery',
+        label: '배터리 뱅크',
         name: props.overview?.devices.battery.name || '-',
         status: props.overview?.devices.battery.status,
     },

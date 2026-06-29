@@ -59,7 +59,7 @@ const drawChart = () => {
         grid: {
             top: 28,
             right: 4,
-            bottom: 24,
+            bottom: 20,
             left: 44,
         },
         tooltip: {

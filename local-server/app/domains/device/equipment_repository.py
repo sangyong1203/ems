@@ -23,6 +23,7 @@ def get_equipment_summary(db: Session) -> dict:
             "INVERTER": len([device for device in devices if device.device_type == "INVERTER"]),
             "PCS": len([device for device in devices if device.device_type == "PCS"]),
             "ESS_BATTERY": len([device for device in devices if device.device_type == "ESS_BATTERY"]),
+            "BATTERY_RACK": len([device for device in devices if device.device_type == "BATTERY_RACK"]),
             "BMS": len([device for device in devices if device.device_type == "BMS"]),
             "AC_PANEL": len([device for device in devices if device.device_type == "AC_PANEL"]),
             "METER": len([device for device in devices if device.device_type in ("GRID_METER", "LOAD_METER")]),
@@ -31,6 +32,7 @@ def get_equipment_summary(db: Session) -> dict:
             "INVERTER": len([device for device in active_devices if device.device_type == "INVERTER"]),
             "PCS": len([device for device in active_devices if device.device_type == "PCS"]),
             "ESS_BATTERY": len([device for device in active_devices if device.device_type == "ESS_BATTERY"]),
+            "BATTERY_RACK": len([device for device in active_devices if device.device_type == "BATTERY_RACK"]),
             "BMS": len([device for device in active_devices if device.device_type == "BMS"]),
             "AC_PANEL": len([device for device in active_devices if device.device_type == "AC_PANEL"]),
             "METER": len(

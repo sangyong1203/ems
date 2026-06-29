@@ -9,7 +9,15 @@ export type PowerFlowData = {
     }
     nodes: {
         solar: { label: string; powerKw: number; status: string }
-        ess: { label: string; chargeKw: number; dischargeKw: number; soc: number; status: string }
+        ess: {
+            label: string
+            chargeKw: number
+            dischargeKw: number
+            soc: number
+            soh: number
+            temperatureC: number
+            status: string
+        }
         load: { label: string; powerKw: number; status: string }
         grid: { label: string; exportKw: number; importKw: number; status: string }
     }
