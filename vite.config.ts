@@ -1,6 +1,7 @@
 import { fileURLToPath, URL } from 'node:url'
 
 import vue from '@vitejs/plugin-vue'
+import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
 import svgLoader from 'vite-svg-loader'
@@ -13,6 +14,7 @@ export default defineConfig({
             extensions: ['vue'],
             deep: true,
             dts: 'components.d.ts',
+            resolvers: [ElementPlusResolver()],
         }),
         svgLoader({
             defaultImport: 'component',
