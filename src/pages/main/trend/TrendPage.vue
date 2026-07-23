@@ -28,14 +28,14 @@
                         class="trend-panel trend-panel--half"
                         title="ESS 충전/방전 전력"
                         subtitle="시간대별 PCS 전력 추이"
-                        :value="`충전 ${formatNumber(overview?.summary.essChargeKw)} kW / 방전 ${formatNumber(
-                            overview?.summary.essDischargeKw,
+                        :value="`충전 ${formatNumber(essOverview?.summary.chargePowerKw)} kW / 방전 ${formatNumber(
+                            essOverview?.summary.dischargePowerKw,
                         )} kW`"
                     >
                         <EssPowerChart
-                            :charge-data="overview?.history.essCharge ?? []"
-                            :discharge-data="overview?.history.essDischarge ?? []"
-                            :soc-data="overview?.history.essSoc ?? []"
+                            :charge-data="essOverview?.history.charge ?? []"
+                            :discharge-data="essOverview?.history.discharge ?? []"
+                            :soc-data="essOverview?.history.soc ?? []"
                             unit="kW"
                         />
                     </GlassPanel>
@@ -60,23 +60,17 @@
             <div class="trend-content__side">
                 <GlassPanel
                     class="trend-panel trend-panel--soc"
-                    title="ESS SOC"
-                    subtitle="배터리 충전율 추이"
-                    :value="`${formatNumber(overview?.summary.essSoc)}%`"
+                    title="전압 / SOC"
+                    subtitle="배터리 충전율 및 전압"
+                    :value="`${formatNumber(essOverview?.summary.batteryVoltageV)} V / ${formatNumber(
+                        essOverview?.summary.soc,
+                    )}%`"
                 >
-                    <TrendAreaChart
-                        :data="overview?.history.essSoc ?? []"
-                        name="ESS SOC"
-                        unit="%"
-                        y-axis-name=""
-                        :show-peak="false"
-                        :line-width="2"
-                        show-line-glow
-                        :grid-top="10"
-                        :grid-right="16"
-                        :grid-bottom="26"
-                        :grid-left="38"
-                        :y-split-number="3"
+                    <EssSocVoltageChart
+                        :soc-data="essOverview?.history.soc ?? []"
+                        :voltage-data="essOverview?.history.voltage ?? []"
+                        :voltage-min="essOverview?.limits.voltageMinV"
+                        :voltage-max="essOverview?.limits.voltageMaxV"
                     />
                 </GlassPanel>
 
@@ -104,21 +98,13 @@
                 <GlassPanel
                     class="trend-panel trend-panel--temperature"
                     title="배터리 온도"
-                    subtitle="BMS 측정값 추이"
-                    :value="`${formatNumber(overview?.summary.batteryTemperatureC)}℃`"
+                    subtitle="랙별 평균 온도"
+                    :value="`${formatNumber(essOverview?.summary.batteryTemperatureC)}℃`"
                 >
-                    <TrendAreaChart
-                        :data="overview?.history.batteryTemperature ?? []"
-                        name="배터리 온도"
-                        unit="℃"
-                        y-axis-name=""
-                        :show-peak="false"
-                        :line-width="2"
-                        :grid-top="10"
-                        :grid-right="16"
-                        :grid-bottom="26"
-                        :grid-left="38"
-                        :y-split-number="3"
+                    <EssRackTemperatureChart
+                        :series="essOverview?.history.rackTemperatures ?? []"
+                        :warning-temperature="essOverview?.limits.temperatureWarningC"
+                        :fault-temperature="essOverview?.limits.temperatureFaultC"
                     />
                 </GlassPanel>
             </div>
@@ -130,6 +116,10 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { EssPowerChart, GlassPanel, MetricCardRow, TrendAreaChart } from '@/shared/components'
 import { isSuccessResponse } from '@/shared/utils'
+import EssRackTemperatureChart from '@/pages/main/ess/components/EssRackTemperatureChart.vue'
+import EssSocVoltageChart from '@/pages/main/ess/components/EssSocVoltageChart.vue'
+import essApi from '@/pages/main/ess/service/ess.api'
+import type { EssOverview } from '@/pages/main/ess/service/ess.types'
 import TrendDualAreaChart from './components/TrendDualAreaChart.vue'
 import trendApi from './service/trend.api'
 import type { TrendOverview } from './service/trend.types'
@@ -137,6 +127,7 @@ import type { TrendOverview } from './service/trend.types'
 const DEFAULT_REFRESH_INTERVAL = 10000
 
 const overview = ref<TrendOverview | null>(null)
+const essOverview = ref<EssOverview | null>(null)
 let pollingTimer: number | undefined
 
 const formatNumber = (value?: number) => {
@@ -170,11 +161,11 @@ const gridPowerText = computed(() => {
 })
 
 const essModeText = computed(() => {
-    if ((overview.value?.summary.essChargeKw ?? 0) > 0) {
-        return `충전 ${formatNumber(overview.value?.summary.essChargeKw)} kW`
+    if ((essOverview.value?.summary.chargePowerKw ?? 0) > 0) {
+        return `충전 ${formatNumber(essOverview.value?.summary.chargePowerKw)} kW`
     }
-    if ((overview.value?.summary.essDischargeKw ?? 0) > 0) {
-        return `방전 ${formatNumber(overview.value?.summary.essDischargeKw)} kW`
+    if ((essOverview.value?.summary.dischargePowerKw ?? 0) > 0) {
+        return `방전 ${formatNumber(essOverview.value?.summary.dischargePowerKw)} kW`
     }
     return '대기'
 })
@@ -189,7 +180,7 @@ const kpiItems = computed(() => [
     },
     {
         label: 'ESS SOC',
-        value: formatNumber(overview.value?.summary.essSoc),
+        value: formatNumber(essOverview.value?.summary.soc),
         unit: '%',
         hint: essModeText.value,
         variant: 'is-ess',
@@ -210,17 +201,20 @@ const kpiItems = computed(() => [
     },
     {
         label: '배터리 온도',
-        value: formatNumber(overview.value?.summary.batteryTemperatureC),
+        value: formatNumber(essOverview.value?.summary.batteryTemperatureC),
         unit: '℃',
-        hint: 'BMS 측정값',
+        hint: '랙 평균 기준',
         variant: 'is-temperature',
     },
 ])
 
 const getTrendOverview = async () => {
-    const res = await trendApi.getOverview()
-    if (isSuccessResponse(res.result)) {
-        overview.value = res.data
+    const [trendResponse, essResponse] = await Promise.all([trendApi.getOverview(), essApi.getOverview()])
+    if (isSuccessResponse(trendResponse.result)) {
+        overview.value = trendResponse.data
+    }
+    if (isSuccessResponse(essResponse.result)) {
+        essOverview.value = essResponse.data
     }
 }
 
@@ -316,9 +310,9 @@ onBeforeUnmount(() => {
     min-height: 0;
 }
 
-.trend-panel--soc :deep(.trend-area-chart),
+.trend-panel--soc :deep(.ess-soc-voltage-chart),
 .trend-panel--load :deep(.trend-area-chart),
-.trend-panel--temperature :deep(.trend-area-chart) {
+.trend-panel--temperature :deep(.ess-rack-temperature-chart) {
     min-height: 130px;
 }
 
@@ -364,9 +358,9 @@ onBeforeUnmount(() => {
         min-height: 280px;
     }
 
-    .trend-panel--soc :deep(.trend-area-chart),
+    .trend-panel--soc :deep(.ess-soc-voltage-chart),
     .trend-panel--load :deep(.trend-area-chart),
-    .trend-panel--temperature :deep(.trend-area-chart) {
+    .trend-panel--temperature :deep(.ess-rack-temperature-chart) {
         min-height: 180px;
     }
 }

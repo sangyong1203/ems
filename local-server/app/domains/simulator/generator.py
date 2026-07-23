@@ -73,6 +73,7 @@ def _upsert_latest(db: Session, device_id: int | None, metric_key: str, value: f
                 measured_at=measured_at,
             )
         )
+        db.flush()
         return
 
     latest.metric_value = value
@@ -91,6 +92,7 @@ def _upsert_site_latest(db: Session, metric_key: str, value: float, measured_at:
                 measured_at=measured_at,
             )
         )
+        db.flush()
         return
 
     latest.metric_value = value
@@ -123,6 +125,7 @@ def _upsert_system_latest(
                 measured_at=measured_at,
             )
         )
+        db.flush()
         return
 
     latest.metric_value = value
