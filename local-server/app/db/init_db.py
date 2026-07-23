@@ -4,6 +4,7 @@ from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
 from .base import Base, Device, EssSystem, EssSystemBatteryRack, InverterPvStringLink, ProjectConfig, PvString, User
+from .power_flow_seed import ensure_power_flow_layout
 from ..core.database import engine
 from ..domains.simulator.generator import generate_today
 
@@ -403,6 +404,7 @@ def seed_database(db: Session) -> None:
     _ensure_pv_strings(db)
     _ensure_ess_systems(db)
     _ensure_battery_racks(db)
+    ensure_power_flow_layout(db)
 
     db.commit()
 
