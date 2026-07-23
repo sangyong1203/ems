@@ -393,6 +393,7 @@ def seed_database(db: Session) -> None:
             ),
         ]
         db.add_all(devices)
+        db.flush()
     else:
         _ensure_inverter_devices(db)
 
