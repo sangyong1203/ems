@@ -32,7 +32,6 @@ package-lock.json
 
 *.tsbuildinfo
 ui-spec/
-vite.config.ts
 local-server/.venv/
 local-server/**/__pycache__/
 local-server/*.db
