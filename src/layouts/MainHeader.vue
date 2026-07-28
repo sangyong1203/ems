@@ -71,7 +71,7 @@ const emit = defineEmits<{
     font-weight: 700;
     font-family: 'Pretendard', sans-serif;
     letter-spacing: 0;
-    color: var(--header-title-text-color);
+    // color: var(--header-title-text-color);
 }
 
 .header-right {
@@ -144,8 +144,8 @@ const emit = defineEmits<{
 }
 .menu-icon {
     color: var(--primary-color) !important;
-    width: 28px;
-    height: 28px;
-    margin-right: 4px;
+    width: 24px;
+    height: 24px;
+    margin-right: 8px;
 }
 </style>

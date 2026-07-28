@@ -1,6 +1,8 @@
 <template>
     <div class="metric-card-row">
-        <article v-for="item in items" :key="item.label" class="metric-card" :class="item.variant">
+        <article v-for="item in items" :key="item.label"
+             class="metric-card" 
+            :class="[item.variant, {withBorder:withBorder}]">
             <div class="metric-card__top">
                 <span class="metric-card__label">{{ item.label }}</span>
                 <span class="metric-card__unit">{{ item.unit }}</span>
@@ -22,6 +24,7 @@ export type MetricCardItem = {
 
 defineProps<{
     items: MetricCardItem[]
+    withBorder?: boolean
 }>()
 </script>
 
@@ -41,15 +44,18 @@ defineProps<{
     min-height: 0;
     padding: 16px 20px;
     overflow: hidden;
+
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    background: #ffffff0a;
+}
+.withBorder{
     border: 1px solid rgb(61 61 61 / 24%);
     border-radius: 8px;
     box-shadow:
         0 7px 12px rgba(0, 0, 0, 0.28),
         0 0 18px rgba(231, 109, 255, 0.08),
         inset 0 1px 0 rgb(255 255 255 / 10%);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    background: #ffffff0a;
 }
 
 .metric-card__top {
