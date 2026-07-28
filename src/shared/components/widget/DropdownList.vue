@@ -203,9 +203,12 @@ const onChange = (value: any) => {
 .dropdown-list :deep(.el-select__selected-item) {
     color: var(--text-color--primary);
 }
-/* .dropdown-list :deep(.el-select__placeholder) {
-    color: var(--text-color--placeholder);
-} */
+.dropdown-list :deep(.el-select__placeholder.is-transparent) {
+    color: var(--text-color--placeholder) !important;
+}
+.dropdown-list :deep(.el-select__placeholder:not(.is-transparent)) {
+    color: var(--text-color--primary) !important;
+}
 .dropdown-list :deep(.el-select__caret) {
     color: var(--text-color--secondary);
 }
