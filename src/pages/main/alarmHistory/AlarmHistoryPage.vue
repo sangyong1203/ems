@@ -89,8 +89,8 @@
                         <el-table-column label="조치 상태" min-width="100" align="center">
                             <template #default="{ row }">
                                 <StatusBadge
-                                    :label="actionStatusLabel(row)"
-                                    :variant="actionStatusVariant(row)"
+                                    :label="actionStatusLabel(row as AlarmItem)"
+                                    :variant="actionStatusVariant(row as AlarmItem)"
                                     min-width="56px"
                                 />
                             </template>
@@ -98,9 +98,9 @@
                         <el-table-column label="동작" width="140" align="center" fixed="right">
                             <template #default="{ row }">
                                 <AlarmRowActions
-                                    :alarm="row"
-                                    @ack="ackAlarm(row)"
-                                    @maintenance="createMaintenance(row)"
+                                    :alarm="row as AlarmItem"
+                                    @ack="ackAlarm(row as AlarmItem)"
+                                    @maintenance="createMaintenance(row as AlarmItem)"
                                 />
                             </template>
                         </el-table-column>

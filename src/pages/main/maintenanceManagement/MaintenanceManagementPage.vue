@@ -99,7 +99,10 @@
                         </el-table-column>
                         <el-table-column label="동작" width="92" align="center" fixed="right">
                             <template #default="{ row }">
-                                <TableRowActions @edit="openEditDialog(row)" @delete="deleteMaintenance(row)" />
+                                <TableRowActions
+                                    @edit="openEditDialog(row as MaintenanceItem)"
+                                    @delete="deleteMaintenance(row as MaintenanceItem)"
+                                />
                             </template>
                         </el-table-column>
                     </el-table>

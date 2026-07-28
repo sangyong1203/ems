@@ -52,10 +52,10 @@
                 <el-table-column label="Actions" width="140" align="center">
                     <template #default="{ row }">
                         <div class="table-actions">
-                            <el-button link @click.stop="openEditDialog(row)"
+                            <el-button link @click.stop="openEditDialog(row as UserItem)"
                                 ><el-icon color="#e76dff" size="large"><Edit /></el-icon
                             ></el-button>
-                            <el-button link @click.stop="confirmDeleteUser(row)"
+                            <el-button link @click.stop="confirmDeleteUser(row as UserItem)"
                                 ><el-icon color="gray" size="large"><Delete /></el-icon
                             ></el-button>
                         </div>

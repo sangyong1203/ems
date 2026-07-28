@@ -110,7 +110,7 @@
                             <template #default="{ row }">{{ row.model_name || '-' }}</template>
                         </el-table-column>
                         <el-table-column prop="capacity" label="정격/범위" min-width="90" align="right">
-                            <template #default="{ row }">{{ capacityText(row) }}</template>
+                            <template #default="{ row }">{{ capacityText(row as DeviceItem) }}</template>
                         </el-table-column>
                         <el-table-column
                             prop="install_location"
@@ -127,7 +127,7 @@
                                     :loading="updatingActiveDeviceIds.has(row.id)"
                                     :disabled="updatingActiveDeviceIds.has(row.id)"
                                     @click.stop
-                                    @change="toggleDeviceActive(row)"
+                                    @change="toggleDeviceActive(row as DeviceItem)"
                                 />
                             </template>
                         </el-table-column>
@@ -149,7 +149,10 @@
                         </el-table-column>
                         <el-table-column label="동작" width="92" align="center" fixed="right">
                             <template #default="{ row }">
-                                <TableRowActions @edit="openEditDialog(row)" @delete="deleteDevice(row)" />
+                                <TableRowActions
+                                    @edit="openEditDialog(row as DeviceItem)"
+                                    @delete="deleteDevice(row as DeviceItem)"
+                                />
                             </template>
                         </el-table-column>
                     </el-table>
@@ -204,7 +207,10 @@
                         </el-table-column>
                         <el-table-column label="동작" width="92" align="center" fixed="right">
                             <template #default="{ row }">
-                                <TableRowActions @edit="openEditPvStringDialog(row)" @delete="deletePvString(row)" />
+                                <TableRowActions
+                                    @edit="openEditPvStringDialog(row as PvStringItem)"
+                                    @delete="deletePvString(row as PvStringItem)"
+                                />
                             </template>
                         </el-table-column>
                     </el-table>
