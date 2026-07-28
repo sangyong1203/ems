@@ -10,7 +10,7 @@
 
 <script lang="ts" setup>
 import { computed } from 'vue'
-import { AppIcons, type AppIconName } from '@/shared/constants/appIcons'
+import { AppIcons, type AppIconName } from '@/constants/appIcons'
 
 defineOptions({
     inheritAttrs: false,

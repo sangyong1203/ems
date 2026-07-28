@@ -54,9 +54,9 @@
 </template>
 
 <script setup lang="ts">
-import { DonutStatusChart, GlassPanel, KeyValueList, ProgressGauge } from '@/shared/components'
-import type { MetricCardItem } from '@/shared/components/widget/MetricCardRow.vue'
-import type { KeyValueItem } from '@/shared/components/widget/KeyValueList.vue'
+import { DonutStatusChart, GlassPanel, KeyValueList, ProgressGauge } from '@/components'
+import type { MetricCardItem } from '@/components/widget/MetricCardRow.vue'
+import type { KeyValueItem } from '@/components/widget/KeyValueList.vue'
 
 defineProps<{
     items: MetricCardItem[]

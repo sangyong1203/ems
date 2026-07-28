@@ -22,11 +22,11 @@
 </template>
 
 <script lang="ts" setup>
-import { BaseDialog } from '@/shared/components'
+import { BaseDialog } from '@/components'
 import type { FormRules, FormInstance } from 'element-plus'
 import { ref, reactive } from 'vue'
 import loginApi from '@/pages/login/service/login.api'
-import { Notification } from '@/shared/composables/useFeedback'
+import { Notification } from '@/composables/useFeedback'
 
 const emits = defineEmits(['refresh'])
 

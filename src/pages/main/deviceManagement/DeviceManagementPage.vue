@@ -236,9 +236,9 @@ import {
     StatusBadge,
     TableRowActions,
     TableToolbar,
-} from '@/shared/components'
-import { Message } from '@/shared/composables/useFeedback'
-import { isSuccessResponse } from '@/shared/utils'
+} from '@/components'
+import { Message } from '@/composables/useFeedback'
+import { isSuccessResponse } from '@/utils'
 import DeviceDetailPanel from './components/DeviceDetailPanel.vue'
 import DeviceFormDialog from './components/DeviceFormDialog.vue'
 import PvStringDetailPanel from './components/PvStringDetailPanel.vue'

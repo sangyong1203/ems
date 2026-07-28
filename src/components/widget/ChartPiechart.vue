@@ -7,43 +7,21 @@
 <script lang="ts" setup>
 import { onMounted, reactive, ref, toRefs, watch } from 'vue'
 import * as echarts from 'echarts'
-import { CHART_COLOR } from '@/shared/constants/colors'
+import { CHART_COLOR } from '@/constants/colors'
 
 export interface Props {
     title: string
-    xAxisData: string[]
-    seriesData: any[]
-    type: 'line' | 'bar'
     unit?: string
     legendData?: string[]
+    seriesData: any[]
     color?: string[]
-    boundaryGap?: boolean
-    gridTop?: number
-    gridRight?: number
-    gridLeft?: number
-    girdBottom?: number
-    legendOrient?: string // legend 諛⑺뼢
+
+    legendOrient?: string
     legendLeft?: number
-    yMax?: number
 }
 
 const props = defineProps<Props>()
-const {
-    title,
-    legendData,
-    xAxisData,
-    seriesData,
-    unit,
-    color,
-    type,
-    gridTop,
-    gridRight,
-    gridLeft,
-    girdBottom,
-    legendOrient,
-    legendLeft,
-    yMax,
-} = toRefs(props)
+const { title, legendData, seriesData, unit, color, legendOrient, legendLeft } = toRefs(props)
 
 // chart
 const chartRef = ref(null)
@@ -56,35 +34,51 @@ let option = reactive({
         orient: legendOrient.value ?? 'horizontal',
         right: 32,
         left: legendLeft.value,
+        show: false,
     },
-    tooltip: {},
-    xAxis: {
-        type: 'category',
-        boundaryGap: type.value === 'bar' ? true : false,
-        data: xAxisData.value,
+
+    tooltip: {
+        trigger: 'item',
+        // textStyle:{
+        //     fontSize:16
+        // }
     },
-    yAxis: {
-        type: 'value',
-        name: '?⑥쐞: ' + unit.value,
-        max: yMax.value,
-    },
-    grid: {
-        top: gridTop.value ?? 40,
-        left: gridLeft.value ?? 32,
-        right: gridRight.value ?? 32,
-        bottom: girdBottom.value ?? 10,
-        containLabel: true,
-    },
+    // grid: {
+
+    //     left: 32,
+
+    //     bottom: 10,
+    //     containLabel: true,
+    // },
     series: [
         {
+            type: 'pie',
+            radius: ['40%', '70%'],
+            avoidLabelOverlap: false,
+            itemStyle: {
+                borderRadius: 0,
+                borderColor: '#fff',
+                borderWidth: 0,
+            },
+            label: {
+                show: false,
+                position: 'center',
+            },
+            emphasis: {
+                label: {
+                    show: true,
+                    fontSize: 22,
+                },
+            },
+            labelLine: {
+                show: false,
+            },
             data: seriesData.value,
-            type: 'line',
         },
     ],
 })
 function drawChart() {
     option.legend.data = legendData.value
-    option.xAxis.data = xAxisData.value
     option.series[0].data = seriesData.value
     option && myChart.setOption(option)
 }
@@ -104,16 +98,16 @@ onMounted(() => {
 .chart-box {
     flex: 1;
     height: 100%;
-    /* border: 1px solid #dddddd; */
-    /* border-radius: 6px; */
+    /* border: 1px solid #dddddd;
+    border-radius: 6px; */
     overflow: hidden;
 }
 
 .chart-name {
     width: 100%;
-    padding: 24px 24px 12px 24px;
+    padding: 8px;
     border-bottom: none;
-    text-align: left;
+    text-align: center;
     font-weight: 700;
 }
 

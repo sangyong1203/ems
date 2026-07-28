@@ -110,11 +110,11 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { EssPowerChart, GlassPanel, TrendAreaChart } from '@/shared/components'
+import { EssPowerChart, GlassPanel, TrendAreaChart } from '@/components'
 import PowerFlowCanvas from '@/features/powerFlow/components/PowerFlowCanvas.vue'
 import PowerFlowPalette from '@/features/powerFlow/components/PowerFlowPalette.vue'
 import type { PowerFlowEditorData, PowerFlowLayout } from '@/features/powerFlow/service/powerFlow.types'
-import { isSuccessResponse } from '@/shared/utils'
+import { isSuccessResponse } from '@/utils'
 import DashboardPowerChart from './components/DashboardPowerChart.vue'
 import DashboardKpiSummary from './components/DashboardKpiSummary.vue'
 // import DashboardPowerFlowMap from './components/DashboardPowerFlowMap.vue'

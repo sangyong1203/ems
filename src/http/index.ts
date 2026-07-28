@@ -2,7 +2,7 @@ import type { AxiosRequestConfig, AxiosResponse, Method, ResponseType } from 'ax
 import axios from 'axios'
 import { forEach, get, isArray, isBoolean, isEmpty, isNil, isNumber, isObject, keys, replace, set } from 'lodash'
 import { useAppStore } from '@/stores/app.store'
-import { useProgress } from '@/shared/composables/useProgressBar'
+import { useProgress } from '@/composables/useProgressBar'
 import { useAuthStore } from '@/stores/auth.store'
 import { handleApiError } from './handleError'
 import type { APIResponse, PathVariables, PayloadModel } from './type'

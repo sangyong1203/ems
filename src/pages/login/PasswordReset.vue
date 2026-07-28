@@ -55,7 +55,7 @@ import type { ChangePassword } from './service/login.types'
 import { useRouter, useRoute } from 'vue-router'
 import { onMounted } from 'vue'
 import loginApi from '@/pages/login/service/login.api'
-import { Notification } from '@/shared/composables/useFeedback'
+import { Notification } from '@/composables/useFeedback'
 
 const router = useRouter()
 const route = useRoute()

@@ -26,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import { DropdownList } from '@/shared/components'
+import { DropdownList } from '@/components'
 import type { ProjectConfigSavePayload } from '../service/settings.types'
 import { toRefs } from 'vue'
 

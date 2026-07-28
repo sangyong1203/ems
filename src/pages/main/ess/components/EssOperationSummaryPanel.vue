@@ -44,7 +44,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { GlassPanel, KeyValueList } from '@/shared/components'
+import { GlassPanel, KeyValueList } from '@/components'
 import type { EssOverview } from '../service/ess.types'
 
 const props = defineProps<{

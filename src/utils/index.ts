@@ -1,5 +1,5 @@
 import fileDownload from 'js-file-download'
-import { Message } from '@/shared/composables/useFeedback'
+import { Message } from '@/composables/useFeedback'
 import html2canvas from 'html2canvas'
 import failedImage from '@/assets/images/failedImage.svg'
 import { dateFormat } from './date.util'

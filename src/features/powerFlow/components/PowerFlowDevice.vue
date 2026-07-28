@@ -42,7 +42,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import AppIcon from '@/shared/components/widget/AppIcon.vue'
+import AppIcon from '@/components/widget/AppIcon.vue'
 import type { PowerFlowAnchor, PowerFlowDeviceItem, PowerFlowLayoutNode } from '../service/powerFlow.types'
 import { deviceStatusLabel, deviceVisual } from '../service/powerFlow.utils'
 

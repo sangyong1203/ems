@@ -24,7 +24,7 @@
   whiteSpace: 'nowrap' | 'normal'
 */
 
-let src = import("src/shared/utils/xlsx/XLSX.min.js")
+let src = import("src/utils/xlsx/XLSX.min.js")
 let script = document.createElement("script")
 script.contains = src
 document.head.appendChild(script)

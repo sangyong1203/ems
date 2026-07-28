@@ -131,8 +131,8 @@ import {
     StatusBadge,
     TableRowActions,
     TableToolbar,
-} from '@/shared/components'
-import { isSuccessResponse } from '@/shared/utils'
+} from '@/components'
+import { isSuccessResponse } from '@/utils'
 import MaintenanceDetailPanel from './components/MaintenanceDetailPanel.vue'
 import MaintenanceFormDialog from './components/MaintenanceFormDialog.vue'
 import maintenanceManagementApi from './service/maintenanceManagement.api'

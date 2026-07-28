@@ -114,8 +114,8 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { EssPowerChart, GlassPanel, MetricCardRow, TrendAreaChart } from '@/shared/components'
-import { isSuccessResponse } from '@/shared/utils'
+import { EssPowerChart, GlassPanel, MetricCardRow, TrendAreaChart } from '@/components'
+import { isSuccessResponse } from '@/utils'
 import EssRackTemperatureChart from '@/pages/main/ess/components/EssRackTemperatureChart.vue'
 import EssSocVoltageChart from '@/pages/main/ess/components/EssSocVoltageChart.vue'
 import essApi from '@/pages/main/ess/service/ess.api'

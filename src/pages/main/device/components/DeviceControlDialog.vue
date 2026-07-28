@@ -110,7 +110,7 @@
 
 <script lang="ts" setup>
 import { reactive, watch } from 'vue'
-import { BaseDialog, CommonTag } from '@/shared/components'
+import { BaseDialog, CommonTag } from '@/components'
 import type { DetectionTarget, DeviceCommand, DeviceItem, DeviceSettingParams } from '../service/device.types'
 
 const props = defineProps<{

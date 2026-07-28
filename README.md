@@ -98,7 +98,7 @@ README.md
 
 ```text
 화면은 pages/에 둔다.
-공통 UI, 공통 로직, 공통 타입, Utils 등은 shared/에 둔다.
+공통 UI, 공통 로직, 공통 타입, Utils 등은 src/ 바로 아래의 역할별 폴더에 둔다.
 여러 화면에 쓰는 UI뿐 아니라 로직도 포함한 기능 덩어리는 features/에 둔다.
 API 통신 공통 계층은 src/http/에 둔다.
 메뉴별 api.ts, types.ts, mapper.ts, store.ts, constants.ts는 해당 메뉴의 service/에 둔다.
@@ -162,19 +162,18 @@ src/
  │   ├─ menu.store.ts               // 메뉴 설정 등
  │   └─ auth.store.ts               // 인증 상태. 로그인 사용자, 토큰 등
  │
- ├─ shared/                         // 여러 메뉴에서 재사용하는 공통 코드 영역
- │   ├─ components/                 // 공통 UI 컴포넌트
- │   │   ├─ layout/                 // 페이지 내부의 공통 배치 구조를 담당하는 컴포넌트
- │   │   ├─ widget/                 // SearchText, DropdownList 등 재사용 위젯 컴포넌트
- │   │   ├─ dialog/                 // BaseDialog, ConfirmDialog 등 공통 다이얼로그 컴포넌트
- │   │   ├─ custom/                 // 이 프로젝트에서만 공통으로 사용할 커스텀 컴포넌트
- │   │   └─ index.ts                // 컴포넌트 자동 import 하려면 여기에 등록 
- │   │
- │   ├─ composables/                // .vue에서 사용하는 상태 기반 공통 기능 로직. usePagination, useDialog 등
- │   ├─ utils/                      // Vue와 무관한 상태가 없는 순수 함수. 날짜, 숫자, 파일 처리 등
- │   ├─ constants/                  // 공통 상수. 상태 코드, 옵션값 등
- │   ├─ mappers/                    // 여러 메뉴에서 반복되는 공통 데이터 변환 함수
- │   └─ types/                      // 공통 타입. SelectOption, TableColumn 등
+ ├─ components/                     // 여러 메뉴에서 재사용하는 공통 UI 컴포넌트
+ │   ├─ layouts/                    // 페이지 내부의 공통 배치 구조를 담당하는 컴포넌트
+ │   ├─ widget/                     // SearchText, DropdownList 등 재사용 위젯 컴포넌트
+ │   ├─ dialog/                     // BaseDialog, ConfirmDialog 등 공통 다이얼로그 컴포넌트
+ │   ├─ custom/                     // 이 프로젝트에서만 공통으로 사용할 커스텀 컴포넌트
+ │   └─ index.ts                    // 공통 컴포넌트 export 진입점
+ │
+ ├─ composables/                    // 여러 메뉴에서 재사용하는 상태 기반 Vue 로직
+ ├─ utils/                          // Vue와 무관한 상태가 없는 순수 함수
+ ├─ constants/                      // 여러 메뉴에서 재사용하는 공통 상수
+ ├─ mappers/                        // 여러 메뉴에서 반복되는 공통 데이터 변환 함수
+ ├─ types/                          // 여러 메뉴에서 재사용하는 공통 타입
  │
  └─ assets/                         // 정적 리소스
      ├─ images/                     // 이미지 파일
@@ -372,7 +371,7 @@ pages/main/device/components/
 → pages/main/device/components/
 
 여러 메뉴에서 반복해서 쓴다면
-→ shared/components/
+→ src/components/
 ```
 ---
 
@@ -906,29 +905,31 @@ services/
 
 ---
 
-### `shared`는 여러 메뉴에서 재사용되는 코드다
+### 공통 코드는 `src/`의 역할별 폴더에 둔다
 
-`shared/`는 공통 components, composables, utils, constants, types를 두는 영역이다.
+여러 메뉴에서 재사용하는 코드는 `shared/`로 한 번 더 감싸지 않고 역할에 따라 `src/` 바로 아래에 둔다.
+이렇게 하면 파일 경로가 짧아지고 컴포넌트, composable, util, 상수의 위치를 바로 찾을 수 있다.
 
 ```text
-shared/
+src/
  ├─ components/                     // 공통 UI 컴포넌트
- │   ├─ layout/                     // 페이지 내부 배치 컴포넌트
+ │   ├─ layouts/                    // 페이지 내부 배치 컴포넌트
  │   ├─ widget/                     // 공통 위젯 컴포넌트
  │   └─ dialog/                     // 공통 다이얼로그 컴포넌트
  ├─ composables/                    // 공통 Vue 로직
  ├─ utils/                          // 공통 순수 함수
  ├─ constants/                      // 공통 상수
-└─ types/                          // 공통 타입
+ ├─ types/                          // 공통 타입
+ └─ mappers/                        // 공통 데이터 변환 함수
 ```
 
-### `shared/components`
+### `src/components`
 
 여러 메뉴에서 재사용하는 UI 컴포넌트, 즉 UI 조각을 둔다.
 
 ```text
-shared/components/
- ├─ layout/                         // 페이지 내부 배치용 컴포넌트
+src/components/
+ ├─ layouts/                        // 페이지 내부 배치용 컴포넌트
  │   ├─ PageHeader.vue              // 페이지 상단 제목/액션 영역
  │   ├─ PageBody.vue                // 페이지 본문 래퍼
  │   └─ PageSection.vue             // 페이지 내부 섹션 영역
@@ -944,7 +945,7 @@ shared/components/
      └─ ConfirmDialog.vue           // 확인/취소 다이얼로그
 ```
 
-### `shared/composables`
+### `src/composables`
 
 여러 메뉴에서 재사용하는 Vue 기능 로직을 둔다.
 
@@ -956,7 +957,7 @@ useResizeObserver.ts
 useCategoryOptions.ts
 ```
 
-### `shared/utils`
+### `src/utils`
 
 Vue와 관계없는 순수 함수를 둔다.
 index.ts 파일 한곳에 모아 둔다. 함수가 많아서 역할 별 분리 필요 시 아래처럼 분리 작성후 index.ts에서 export 한다.
@@ -987,7 +988,7 @@ composables
 → ref, computed, watch 등 Vue 기능을 사용하는 화면 로직
 ```
 
-### `shared/constants`
+### `src/constants`
 
 여러 메뉴에서 사용하는 상수를 둔다. 상수 타입도 아래처럼 같이 정의해야 한다.
 
@@ -1002,7 +1003,7 @@ export const DEVICE_STATUS = {
 export type DeviceStatus = keyof typeof DEVICE_STATUS
 ```
 
-### `shared/types`
+### `src/types`
 
 여러 화면에서 사용하는 공통 타입을 둔다.
 
@@ -1114,7 +1115,7 @@ axios, fetch 공통 설정
 → pages/main/{menu}/service/{menu}.types.ts
 
 여러 메뉴에서 쓰는 공통 타입
-→ shared/types/
+→ src/types/
 ```
 
 ### mapper는 어디에 두는가?
@@ -1125,7 +1126,7 @@ axios, fetch 공통 설정
 → pages/main/{menu}/service/{menu}.mapper.ts
 
 여러 메뉴에서 반복되는 범용 데이터 변환
-→ shared/mappers/
+→ src/mappers/
 
 ```
 
@@ -1149,7 +1150,7 @@ axios, fetch 공통 설정
 → pages/main/{menu}/composables/
 
 여러 메뉴에서 재사용되는 로직
-→ shared/composables/
+→ src/composables/
 ```
 
 ### component는 어디에 두는가?
@@ -1159,11 +1160,11 @@ axios, fetch 공통 설정
 → pages/main/{menu}/components/
 
 여러 메뉴에서 재사용
-→ shared/components/
+→ src/components/
 
 예를 들어 `DeviceTable.vue`이 장비 관리 화면에만 쓰이면 메뉴 내부에 둔다.
 
-하지만 `BaseImage.vue`, `BaseDialog.vue`, `SearchText.vue`처럼 여러 메뉴에서 공통으로 쓸 수 있는 컴포넌트는 `shared/components/`로 이동한다.
+하지만 `BaseImage.vue`, `BaseDialog.vue`, `SearchText.vue`처럼 여러 메뉴에서 공통으로 쓸 수 있는 컴포넌트는 `src/components/`로 이동한다.
 ```
 
 ---
@@ -1265,8 +1266,8 @@ src/http/
 services/
 → 여러 메뉴에서 사용하는 공통 API/service
 
-shared/
-→ 여러 메뉴에서 재사용하는 코드
+components/, composables/, utils/, constants/
+→ 여러 메뉴에서 재사용하는 역할별 공통 코드
 
 assets/
 → 이미지, 아이콘, 폰트, 전역 스타일
@@ -1276,7 +1277,7 @@ assets/
 
 ```text
 1. 메뉴 전용 코드는 메뉴 폴더 안에 둔다.
-2. 여러 메뉴에서 반복되면 shared/로 올린다.
+2. 여러 메뉴에서 반복되면 src/의 역할별 공통 폴더로 올린다.
 3. API와 화면 로직을 섞지 않는다.
 4. 데이터 변환은 mapper로 분리한다.
 5. store에는 공유/유지 상태와 그 상태를 변경하는 처리 로직만 둔다.
@@ -1384,7 +1385,7 @@ type APIResponse<T = any> = {
 처리 방식:
 
 ```ts
-import { isSuccessResponse } from '@/shared/utils'
+import { isSuccessResponse } from '@/utils'
 
 const saveData = async () => {
     const res = await exampleApi.save(payload)
@@ -1406,7 +1407,7 @@ const saveData = async () => {
 - business result error: 화면 또는 기능 단위에서 `isSuccessResponse(res.result)`로 판단
 - 성공일 때만 목록 재조회, 성공 메시지, 다이얼로그 닫기 처리
 - 실패일 때는 `res.resultMessage`를 우선 사용하고, 없으면 기능별 기본 메시지를 사용
-- `isSuccessResponse`는 `src/shared/utils/api.util.ts`에 둔다
+- `isSuccessResponse`는 `src/utils/api.util.ts`에 둔다
 - `SUCCESS`, `success`처럼 대소문자가 섞일 수 있으므로 `isSuccessResponse` 내부에서 대문자로 정규화한다
 
 
@@ -1414,8 +1415,8 @@ const saveData = async () => {
 
 ### 공통 컴포넌트를 전역 컴포넌트 등록 방식
 
-이 프로젝트는 Vite 설정을 통해 공통 컴포넌트를 전역 컴포넌트로 자동 등록한다.
-공통 컴포넌트를 `shared/components/index.ts`에서 export하면 `.vue` 파일에서 별도 import 없이 직접 사용할 수 있다.
+이 프로젝트는 Vite 설정을 통해 `src/components/` 아래의 Vue 컴포넌트를 전역 컴포넌트로 자동 등록한다.
+`src/components/index.ts`는 스크립트에서 공통 컴포넌트를 명시적으로 import할 때 사용하는 export 진입점이다.
 
 예:
 
@@ -1429,7 +1430,7 @@ export { default as SearchBox } from './widget/SearchBox.vue'
 ```
 
 주의:
-shared/components/index.ts에서 export하지 않은 컴포넌트는 자동 등록 대상이 아니므로, 직접 import해서 사용해야 한다.
+템플릿 자동 등록 대상은 `src/components/` 아래의 `.vue` 파일이다. 스크립트에서 컴포넌트를 import할 때는 `src/components/index.ts`에서 export하거나 파일 경로로 직접 import한다.
 
 ---
 
@@ -1457,7 +1458,7 @@ shared/components/index.ts에서 export하지 않은 컴포넌트는 자동 등�
 `multiple` 속성을 추가하면 다중 선택 모드로 동작하며, 전체 선택 체크박스가 표시된다.  
 `multiple` 속성이 없으면 단일 선택 모드로 동작하며, 전체 선택 체크박스가 표시되지 않는다.
 
-선택값 처리는 `shared/utils`의 `getTableSelection(tableRef, val)` 함수를 사용한다.  
+선택값 처리는 `src/utils`의 `getTableSelection(tableRef, val)` 함수를 사용한다.
 `getTableSelection()`은 `multiple` 속성 유무에 따라 다중 선택 또는 단일 선택 결과를 반환한다.
 
 > 참고: `multiple`은 Element Plus 기본 속성이 아니라, 이 프로젝트에서 커스텀 처리한 속성이다.
@@ -1467,7 +1468,7 @@ shared/components/index.ts에서 export하지 않은 컴포넌트는 자동 등�
 <el-table multiple @selection-change="getChecked"></el-table>
 ```
 ```ts
-import { getTableSelection } from '@/shared/utils'
+import { getTableSelection } from '@/utils'
 const tableRef: any = ref(null)
 const getChecked = (val: any) => {
     const selected = getTableSelection(tableRef, val)
@@ -1476,7 +1477,7 @@ const getChecked = (val: any) => {
 ```
 
 ### AppIcon 컴포넌트
-공통 아이콘은 `AppIcon` 컴포넌트를 사용한다. 아이콘 svg 파일은 `src/assets/icons/`에 두고, `src/shared/constants/appIcons.ts`의 `AppIcons`에 등록한다.
+공통 아이콘은 `AppIcon` 컴포넌트를 사용한다. 아이콘 svg 파일은 `src/assets/icons/`에 두고, `src/constants/appIcons.ts`의 `AppIcons`에 등록한다.
 
 등록된 아이콘은 `.vue` 파일에서 별도 import 없이 아이콘 이름만 전달해서 사용한다.
 

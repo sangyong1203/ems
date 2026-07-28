@@ -40,8 +40,8 @@
 <script lang="ts" setup>
 import { nextTick, reactive, ref, watch } from 'vue'
 import type { FormInstance, FormRules } from 'element-plus'
-import { BaseDialog } from '@/shared/components'
-import { REG_EXPS } from '@/shared/utils'
+import { BaseDialog } from '@/components'
+import { REG_EXPS } from '@/utils'
 import type { UserItem, UserRole, UserSaveParams, UserStatus } from '../service/userManagement.types'
 
 type SelectOption<T extends string> = {

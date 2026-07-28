@@ -5,7 +5,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import * as echarts from 'echarts'
-import { COLOR_TYPE } from '@/shared/constants/colors'
+import { COLOR_TYPE } from '@/constants/colors'
 import type { DashboardTelemetryPoint } from '../service/dashboard.types'
 
 const props = withDefaults(

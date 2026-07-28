@@ -55,7 +55,7 @@
 import { ref, reactive } from 'vue'
 import type { ChangePassword } from './service/login.types'
 import loginApi from './service/login.api'
-import { Notification } from '@/shared/composables/useFeedback'
+import { Notification } from '@/composables/useFeedback'
 import router from '@/router'
 
 const dialogVisible = ref(false)

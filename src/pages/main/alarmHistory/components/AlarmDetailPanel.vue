@@ -28,7 +28,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { GlassPanel, KeyValueList, StatusBadge } from '@/shared/components'
+import { GlassPanel, KeyValueList, StatusBadge } from '@/components'
 import type { AlarmActionStatus, AlarmItem } from '../service/alarmHistory.types'
 
 const props = defineProps<{

@@ -36,7 +36,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import AppIcon from '@/shared/components/widget/AppIcon.vue'
+import AppIcon from '@/components/widget/AppIcon.vue'
 
 const CELL_COUNT = 5
 

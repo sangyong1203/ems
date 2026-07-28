@@ -97,14 +97,14 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { GlassPanel, KeyValueList, MetricCardRow, ProgressGauge, StatusBadge } from '@/shared/components'
+import { GlassPanel, KeyValueList, MetricCardRow, ProgressGauge, StatusBadge } from '@/components'
 import PowerFlowCanvas from '@/features/powerFlow/components/PowerFlowCanvas.vue'
 import type {
     PowerFlowEditorData,
     PowerFlowLayout,
     PowerFlowLayoutSaveBody,
 } from '@/features/powerFlow/service/powerFlow.types'
-import { isSuccessResponse } from '@/shared/utils'
+import { isSuccessResponse } from '@/utils'
 import powerFlowApi from './service/powerFlow.api'
 import type { PowerFlowData } from './service/powerFlow.types'
 

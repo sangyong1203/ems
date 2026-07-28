@@ -20,8 +20,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { ElMessageBox } from 'element-plus'
-import { Message } from '@/shared/composables/useFeedback'
-import { isSuccessResponse } from '@/shared/utils'
+import { Message } from '@/composables/useFeedback'
+import { isSuccessResponse } from '@/utils'
 import settingsApi from '../service/settings.api'
 
 type SimulatorActionKey = 'today' | 'last7Days' | 'alarms' | 'maintenance' | 'reset'

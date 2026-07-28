@@ -58,7 +58,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
-import { dateFormat } from '@/shared/utils'
+import { dateFormat } from '@/utils'
 
 type Align = 'left' | 'center' | 'right'
 type ListItem = {

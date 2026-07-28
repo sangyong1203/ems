@@ -87,9 +87,9 @@ import {
     Pagination,
     SearchBox,
     SearchText,
-} from '@/shared/components'
-import { Message, Notification } from '@/shared/composables/useFeedback'
-import { addComma, isSuccessResponse } from '@/shared/utils'
+} from '@/components'
+import { Message, Notification } from '@/composables/useFeedback'
+import { addComma, isSuccessResponse } from '@/utils'
 import UserFormDialog from './components/UserFormDialog.vue'
 import userManagementApi from './service/userManagement.api.ts'
 import type { RequestParams, UserItem, UserRole, UserSaveParams, UserStatus } from './service/userManagement.types.ts'

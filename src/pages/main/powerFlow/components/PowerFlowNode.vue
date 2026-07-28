@@ -12,8 +12,8 @@
 </template>
 
 <script setup lang="ts">
-import AppIcon from '@/shared/components/widget/AppIcon.vue'
-import type { AppIconName } from '@/shared/constants/appIcons'
+import AppIcon from '@/components/widget/AppIcon.vue'
+import type { AppIconName } from '@/constants/appIcons'
 
 defineProps<{
     variant: 'solar' | 'load' | 'grid'

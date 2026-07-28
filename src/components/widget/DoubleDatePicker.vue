@@ -45,7 +45,7 @@
 <script lang="ts" setup>
 import { computed, ref, watch, type ComputedRef } from 'vue'
 import dayjs from 'dayjs'
-import { Notification } from '@/shared/composables/useFeedback'
+import { Notification } from '@/composables/useFeedback'
 
 export interface Props {
     label?: string | null

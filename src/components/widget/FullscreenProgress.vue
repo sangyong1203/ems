@@ -22,7 +22,7 @@
 </template>
 
 <script setup lang="ts">
-import { useProgress } from '@/shared/composables/useProgressBar'
+import { useProgress } from '@/composables/useProgressBar'
 const progressStore = useProgress()
 
 </script>

@@ -1,5 +1,5 @@
 import { isNil } from 'lodash'
-import { Notification } from '@/shared/composables/useFeedback'
+import { Notification } from '@/composables/useFeedback'
 import { refreshAccessToken } from './authToken'
 import type { RequestConfig } from './index'
 

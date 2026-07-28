@@ -1,4 +1,4 @@
-import Excel from '@/shared/utils/xlsx/Excel.module.js'
+import Excel from '@/utils/xlsx/Excel.module.js'
 import dayjs from 'dayjs'
 
 

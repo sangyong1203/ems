@@ -98,7 +98,7 @@
 <script setup lang="ts">
 import { nextTick, reactive, ref, watch } from 'vue'
 import type { FormInstance, FormRules } from 'element-plus'
-import { BaseDialog } from '@/shared/components'
+import { BaseDialog } from '@/components'
 import type {
     MaintenanceDeviceOption,
     MaintenanceItem,

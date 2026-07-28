@@ -143,7 +143,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import AppIcon from '@/shared/components/widget/AppIcon.vue'
+import AppIcon from '@/components/widget/AppIcon.vue'
 import PowerFlowDevice from './PowerFlowDevice.vue'
 import PowerFlowPalette from './PowerFlowPalette.vue'
 import PowerFlowWire from './PowerFlowWire.vue'

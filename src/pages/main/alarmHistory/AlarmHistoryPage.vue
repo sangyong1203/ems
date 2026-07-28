@@ -120,8 +120,8 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { DropdownList, GlassPanel, MetricCardRow, SearchText, StatusBadge, TableToolbar } from '@/shared/components'
-import { isSuccessResponse } from '@/shared/utils'
+import { DropdownList, GlassPanel, MetricCardRow, SearchText, StatusBadge, TableToolbar } from '@/components'
+import { isSuccessResponse } from '@/utils'
 import AlarmDetailPanel from './components/AlarmDetailPanel.vue'
 import AlarmRowActions from './components/AlarmRowActions.vue'
 import alarmHistoryApi from './service/alarmHistory.api'

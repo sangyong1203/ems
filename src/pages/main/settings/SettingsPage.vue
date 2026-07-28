@@ -28,9 +28,9 @@
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import { GlassPanel } from '@/shared/components'
-import { Message } from '@/shared/composables/useFeedback'
-import { isSuccessResponse } from '@/shared/utils'
+import { GlassPanel } from '@/components'
+import { Message } from '@/composables/useFeedback'
+import { isSuccessResponse } from '@/utils'
 import EquipmentSettingsTab from './components/EquipmentSettingsTab.vue'
 import MonitoringSettingsTab from './components/MonitoringSettingsTab.vue'
 import ProjectSettingsTab from './components/ProjectSettingsTab.vue'

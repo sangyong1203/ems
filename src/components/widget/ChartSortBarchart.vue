@@ -5,7 +5,7 @@
     </div>
 </template>
 <script lang="ts" setup>
-import { CHART_COLOR } from '@/shared/constants/colors'
+import { CHART_COLOR } from '@/constants/colors'
 import * as echarts from 'echarts'
 import { onMounted, reactive, ref, toRefs, watch } from 'vue'
 

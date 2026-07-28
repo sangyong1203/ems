@@ -7,12 +7,12 @@
 <script lang="ts" setup>
 import { onMounted, reactive, ref, toRefs, watch } from 'vue'
 import * as echarts from 'echarts'
-import { CHART_COLOR } from '@/shared/constants/colors'
+import { CHART_COLOR } from '@/constants/colors'
 
 export interface Props {
-    title?: string
+    title: string
     xAxisData: string[]
-    series: any[]
+    seriesData: any[]
     type: 'line' | 'bar'
     unit?: string
     legendData?: string[]
@@ -32,7 +32,7 @@ const {
     title,
     legendData,
     xAxisData,
-    series,
+    seriesData,
     unit,
     color,
     type,
@@ -62,13 +62,10 @@ let option = reactive({
         type: 'category',
         boundaryGap: type.value === 'bar' ? true : false,
         data: xAxisData.value,
-        axisLabel: {
-            rotate: 0,
-        },
     },
     yAxis: {
         type: 'value',
-        name: unit.value,
+        name: '?⑥쐞: ' + unit.value,
         max: yMax.value,
     },
     grid: {
@@ -78,23 +75,20 @@ let option = reactive({
         bottom: girdBottom.value ?? 10,
         containLabel: true,
     },
-    series: series.value,
+    series: [
+        {
+            data: seriesData.value,
+            type: 'line',
+        },
+    ],
 })
-const getAxsisLabelRotate = () => {
-    let axisLabelRotate = 0
-    if (xAxisData.value.length > 10) {
-        axisLabelRotate = 50
-    }
-    return axisLabelRotate
-}
 function drawChart() {
     option.legend.data = legendData.value
     option.xAxis.data = xAxisData.value
-    option.series = series.value
-    option.xAxis.axisLabel.rotate = getAxsisLabelRotate()
+    option.series[0].data = seriesData.value
     option && myChart.setOption(option)
 }
-watch(series, () => {
+watch(seriesData, () => {
     drawChart()
 })
 onMounted(() => {
@@ -110,10 +104,8 @@ onMounted(() => {
 .chart-box {
     flex: 1;
     height: 100%;
-    border: 1px solid var(--common-component-border-color);
-    border-radius: 6px;
-    background: var(--common-component-bg-color);
-    color: var(--text-color--body);
+    /* border: 1px solid #dddddd; */
+    /* border-radius: 6px; */
     overflow: hidden;
 }
 
@@ -123,7 +115,6 @@ onMounted(() => {
     border-bottom: none;
     text-align: left;
     font-weight: 700;
-    color: var(--text-color--primary);
 }
 
 .chart {

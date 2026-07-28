@@ -1,4 +1,4 @@
-import type { AppIconName } from '@/shared/constants/appIcons'
+import type { AppIconName } from '@/constants/appIcons'
 
 export type PowerFlowAnchor = 'TOP' | 'RIGHT' | 'BOTTOM' | 'LEFT'
 export type PowerFlowEndpointType = 'NODE' | 'JUNCTION'

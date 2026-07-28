@@ -43,9 +43,9 @@ import { onMounted, reactive, ref } from 'vue'
 import type { CheckboxValueType } from 'element-plus'
 import notificationManagementApi from './service/notificationManagement.api'
 import type { SearchParams, TemplateList } from './service/notificationManagement.types'
-import { Message, Notification } from '@/shared/composables/useFeedback'
-import { loadingSvgContent, loadingSvgViewBox } from '@/shared/composables/useProgressBar'
-import { addComma, localeDateFormat } from '@/shared/utils'
+import { Message, Notification } from '@/composables/useFeedback'
+import { loadingSvgContent, loadingSvgViewBox } from '@/composables/useProgressBar'
+import { addComma, localeDateFormat } from '@/utils'
 
 const isTableLoading = ref(true)
 const tableData = ref<TemplateList[]>([])

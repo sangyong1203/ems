@@ -62,7 +62,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { GlassPanel, StatusBadge } from '@/shared/components'
+import { GlassPanel, StatusBadge } from '@/components'
 import type { EssBatteryRack } from '../service/ess.types'
 
 const props = defineProps<{

@@ -73,7 +73,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { GlassPanel } from '@/shared/components'
+import { GlassPanel } from '@/components'
 import type { PvStringItem } from '../service/deviceManagement.types'
 
 const props = defineProps<{

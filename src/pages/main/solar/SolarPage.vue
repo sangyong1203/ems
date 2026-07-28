@@ -104,8 +104,8 @@ import {
     ProgressGauge,
     StatusBadge,
     TrendAreaChart,
-} from '@/shared/components'
-import { isSuccessResponse } from '@/shared/utils'
+} from '@/components'
+import { isSuccessResponse } from '@/utils'
 import solarApi from './service/solar.api'
 import type { SolarOverview } from './service/solar.types'
 

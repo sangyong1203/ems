@@ -41,8 +41,8 @@
 </template>
 
 <script setup lang="ts">
-import { GlassPanel } from '@/shared/components'
-import EssBattery from '@/shared/components/custom/EssBattery.vue'
+import { GlassPanel } from '@/components'
+import EssBattery from '@/components/custom/EssBattery.vue'
 import type { EssSystemItem, EssSystemSummary } from '../service/ess.types'
 
 defineProps<{

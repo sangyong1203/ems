@@ -130,7 +130,7 @@
 <script lang="ts" setup>
 import { nextTick, reactive, ref, watch } from 'vue'
 import type { FormInstance, FormRules } from 'element-plus'
-import { BaseDialog } from '@/shared/components'
+import { BaseDialog } from '@/components'
 import type { DetectionTarget, DeviceItem, DeviceSaveParams, DeviceStatus } from '../service/device.types'
 
 const props = defineProps<{

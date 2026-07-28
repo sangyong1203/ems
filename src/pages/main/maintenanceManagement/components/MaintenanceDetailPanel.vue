@@ -31,7 +31,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { GlassPanel, KeyValueList } from '@/shared/components'
+import { GlassPanel, KeyValueList } from '@/components'
 import type { MaintenanceItem } from '../service/maintenanceManagement.types'
 
 const props = defineProps<{

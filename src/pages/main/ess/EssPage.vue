@@ -67,9 +67,9 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { GlassPanel, MetricCardRow } from '@/shared/components'
-import EssPowerChart from '@/shared/components/custom/EssPowerChart.vue'
-import { isSuccessResponse } from '@/shared/utils'
+import { GlassPanel, MetricCardRow } from '@/components'
+import EssPowerChart from '@/components/custom/EssPowerChart.vue'
+import { isSuccessResponse } from '@/utils'
 import EssOperationSummaryPanel from './components/EssOperationSummaryPanel.vue'
 import EssSystemListPanel from './components/EssSystemListPanel.vue'
 import EssBatteryRackPanel from './components/EssBatteryRackPanel.vue'

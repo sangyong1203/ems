@@ -136,8 +136,8 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { DatePicker, GlassPanel, KeyValueList, MetricCardRow, StatusBadge } from '@/shared/components'
-import { isSuccessResponse } from '@/shared/utils'
+import { DatePicker, GlassPanel, KeyValueList, MetricCardRow, StatusBadge } from '@/components'
+import { isSuccessResponse } from '@/utils'
 import AlarmDailyChart from './components/AlarmDailyChart.vue'
 import AlarmSeverityDonutChart from './components/AlarmSeverityDonutChart.vue'
 import EssOperationChart from './components/EssOperationChart.vue'
@@ -146,7 +146,7 @@ import LoadStatisticsChart from './components/LoadStatisticsChart.vue'
 import SelfRelianceChart from './components/SelfRelianceChart.vue'
 import SolarGenerationChart from './components/SolarGenerationChart.vue'
 import operationReportApi from './service/operationReport.api'
-import type { DatePickerChangeSource } from '@/shared/components/widget/DatePicker.vue'
+import type { DatePickerChangeSource } from '@/components/widget/DatePicker.vue'
 import type { ReportStatistics, ReportSummary } from './service/operationReport.types'
 import dayjs from 'dayjs'
 
