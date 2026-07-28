@@ -179,6 +179,33 @@ const onChange = (value: any) => {
     align-items: center;
     gap: 16px;
     color: var(--text-color--primary);
+    
+    :deep(.el-select) {
+        width: 100%;
+    }
+    :deep(.el-select__wrapper) {
+        min-height: 36px;
+        padding: 4px 20px;
+        border-radius: 999px;
+        background: var(--common-control-bg-color);
+        box-shadow: 0 0 0 1px var(--common-control-border-color) inset;
+    }
+    :deep(.el-select__selected-item),
+    :deep(.el-select__placeholder) {
+        font-size: 15px;
+    }
+    :deep(.el-select__selected-item) {
+        color: var(--text-color--primary);
+    }
+    :deep(.el-select__placeholder.is-transparent) {
+        color: var(--text-color--placeholder) !important;
+    }
+    :deep(.el-select__placeholder:not(.is-transparent)) {
+        color: var(--text-color--primary) !important;
+    }
+    :deep(.el-select__caret) {
+        color: var(--text-color--secondary);
+    }
 }
 .dropdown-list_label {
     color: var(--text-color--primary);
@@ -186,32 +213,7 @@ const onChange = (value: any) => {
     font-weight: 500;
     line-height: 20px;
 }
-.dropdown-list :deep(.el-select) {
-    width: 100%;
-}
-.dropdown-list :deep(.el-select__wrapper) {
-    min-height: 36px;
-    padding: 4px 20px;
-    border-radius: 999px;
-    background: var(--common-control-bg-color);
-    box-shadow: 0 0 0 1px var(--common-control-border-color) inset;
-}
-.dropdown-list :deep(.el-select__selected-item),
-.dropdown-list :deep(.el-select__placeholder) {
-    font-size: 15px;
-}
-.dropdown-list :deep(.el-select__selected-item) {
-    color: var(--text-color--primary);
-}
-.dropdown-list :deep(.el-select__placeholder.is-transparent) {
-    color: var(--text-color--placeholder) !important;
-}
-.dropdown-list :deep(.el-select__placeholder:not(.is-transparent)) {
-    color: var(--text-color--primary) !important;
-}
-.dropdown-list :deep(.el-select__caret) {
-    color: var(--text-color--secondary);
-}
+
 .label-position-top {
     flex-direction: column;
     align-items: flex-start;
