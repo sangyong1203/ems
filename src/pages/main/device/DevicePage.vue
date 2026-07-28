@@ -106,13 +106,13 @@
                 <el-table-column label="Actions" width="170" align="center" fixed="right">
                     <template #default="{ row }">
                         <div class="table-actions">
-                            <el-button link @click.stop="openEditDialog(row)">
+                            <el-button link @click.stop="openEditDialog(row as DeviceItem)">
                                 <el-icon color="#e76dff" size="large"><Edit /></el-icon>
                             </el-button>
-                            <el-button link @click.stop="openControlDialog(row)">
+                            <el-button link @click.stop="openControlDialog(row as DeviceItem)">
                                 <el-icon color="#15e0b7" size="large"><Operation /></el-icon>
                             </el-button>
-                            <el-button link @click.stop="deleteDevice(row)">
+                            <el-button link @click.stop="deleteDevice(row as DeviceItem)">
                                 <el-icon color="gray" size="large"><Delete /></el-icon>
                             </el-button>
                         </div>
