@@ -127,20 +127,21 @@ import AlarmRowActions from './components/AlarmRowActions.vue'
 import alarmHistoryApi from './service/alarmHistory.api'
 import type { AlarmActionStatus, AlarmDeviceOption, AlarmItem } from './service/alarmHistory.types'
 
-const alarms = ref<AlarmItem[]>([])
-const selectedAlarm = ref<AlarmItem | null>(null)
-const deviceOptions = ref<AlarmDeviceOption[]>([])
+const alarms = ref<AlarmItem[]>([]) // 알림 이력 목록
+const selectedAlarm = ref<AlarmItem | null>(null) // 상세 패널에 표시할 선택 알림
+const deviceOptions = ref<AlarmDeviceOption[]>([]) // 장비 필터 옵션 목록
 
+// 검색 및 필터 조건
 const searchParams = reactive({
-    keyword: '',
-    deviceId: '' as number | '',
-    severity: '',
-    alarmType: '',
-    status: '',
-    dateFrom: '',
-    dateTo: '',
+    keyword: '', // 장비명·유형·메시지 검색어
+    deviceId: '' as number | '', // 선택한 대상 장비 ID
+    severity: '', // 알림 등급 (INFO, WARNING, CRITICAL)
+    alarmType: '', // 알림 유형명
+    status: '', // 조치 상태 코드
+    dateFrom: '', // 발생 기간 시작일 (YYYY-MM-DD)
+    dateTo: '', // 발생 기간 종료일 (YYYY-MM-DD)
 })
-const dateRange = ref<[string, string] | null>(null)
+const dateRange = ref<[string, string] | null>(null) // 발생 기간 선택값
 
 const severityOptions = [
     { label: '정보', value: 'INFO' },
@@ -198,8 +199,10 @@ const kpiItems = computed(() => [
     },
 ])
 
+// 알림 등급 코드를 한글 라벨로 변환합니다.
 const severityLabel = (value: string) => severityOptions.find(item => item.value === value)?.label || value || '-'
 
+// 알림 등급에 대응하는 뱃지 색상 variant를 반환합니다.
 const severityVariant = (value: string) => {
     if (value === 'CRITICAL') {
         return 'danger'
@@ -210,6 +213,7 @@ const severityVariant = (value: string) => {
     return 'info'
 }
 
+// 정비 상태를 우선 반영하여 알림의 최종 조치 상태를 계산합니다.
 const getActionStatus = (alarm: AlarmItem): AlarmActionStatus => {
     if (alarm.maintenance_status) {
         return alarm.maintenance_status as AlarmActionStatus
@@ -217,11 +221,13 @@ const getActionStatus = (alarm: AlarmItem): AlarmActionStatus => {
     return alarm.status === 'OPEN' ? 'OPEN' : 'ACKED'
 }
 
+// 최종 조치 상태 코드를 한글 라벨로 변환합니다.
 const actionStatusLabel = (alarm: AlarmItem) => {
     const status = getActionStatus(alarm)
     return statusOptions.find(item => item.value === status)?.label || status || '-'
 }
 
+// 조치 상태에 대응하는 뱃지 색상 variant를 반환합니다.
 const actionStatusVariant = (alarm: AlarmItem) => {
     const status = getActionStatus(alarm)
     if (status === 'COMPLETED') {
@@ -239,20 +245,24 @@ const actionStatusVariant = (alarm: AlarmItem) => {
     return 'warning'
 }
 
+// ISO 일시 문자열을 'YYYY-MM-DD HH:mm:ss' 형식으로 변환합니다.
 const formatDateTime = (value: string | null | undefined) => {
     return value ? value.replace('T', ' ').slice(0, 19) : '-'
 }
 
+// 목록에서 알림 행 클릭 시 상세 패널 표시 대상을 변경합니다.
 const selectAlarm = (alarm: AlarmItem) => {
     selectedAlarm.value = alarm
 }
 
+// 발생 기간 변경 시 검색 조건을 갱신하고 목록을 재조회합니다.
 const changeDateRange = (value: [string, string] | null) => {
     searchParams.dateFrom = value?.[0] || ''
     searchParams.dateTo = value?.[1] || ''
     getAlarms()
 }
 
+// 필터 드롭다운에 표시할 장비 마스터 목록을 조회합니다.
 const getDevices = async () => {
     const res = await alarmHistoryApi.getDevices()
     if (isSuccessResponse(res.result)) {
@@ -260,6 +270,7 @@ const getDevices = async () => {
     }
 }
 
+// 검색 조건에 맞는 알림 목록을 조회하고 상세 선택 상태를 동기화합니다.
 const getAlarms = async () => {
     const res = await alarmHistoryApi.getList({
         ...searchParams,
@@ -276,22 +287,26 @@ const getAlarms = async () => {
     }
 }
 
+// 조치 완료 후 목록을 재조회하고 해당 알림의 상세 선택을 유지합니다.
 const refreshAfterAction = async (alarmId: number) => {
     await getAlarms()
     selectedAlarm.value = alarms.value.find(item => item.id === alarmId) ?? selectedAlarm.value
 }
 
+// 알림을 확인(ACKED) 처리합니다.
 const ackAlarm = async (alarm: AlarmItem) => {
     await alarmHistoryApi.acknowledge(alarm.id)
     await refreshAfterAction(alarm.id)
 }
 
+// 알림에 대한 정비 이력을 생성하고 연계 상태를 갱신합니다.
 const createMaintenance = async (alarm: AlarmItem) => {
     await alarmHistoryApi.createMaintenance(alarm.id)
     ElMessage.success('정비 이력이 등록되었습니다.')
     await refreshAfterAction(alarm.id)
 }
 
+// 검색어를 모두 지웠을 때 별도 입력 없이 전체 목록을 자동 재조회합니다.
 watch(
     () => searchParams.keyword,
     (keyword, prevKeyword) => {
@@ -301,6 +316,7 @@ watch(
     },
 )
 
+// 화면 초기 진입 시 장비 옵션과 알림 목록을 조회합니다.
 onMounted(async () => {
     await getDevices()
     await getAlarms()

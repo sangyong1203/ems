@@ -32,12 +32,12 @@ import { GlassPanel, KeyValueList, StatusBadge } from '@/components'
 import type { AlarmActionStatus, AlarmItem } from '../service/alarmHistory.types'
 
 const props = defineProps<{
-    alarm: AlarmItem | null
+    alarm: AlarmItem | null // 상세 조회할 알림 객체 (미선택 시 null)
 }>()
 
 const emit = defineEmits<{
-    ack: []
-    maintenance: []
+    ack: [] // 알림 확인 처리 요청
+    maintenance: [] // 정비 이력 등록 요청
 }>()
 
 const severityLabels: Record<string, string> = {
@@ -70,12 +70,17 @@ const deviceTypeLabels: Record<string, string> = {
     ETC: '기타',
 }
 
+// 값이 없을 때 대체 표시할 문자열을 반환합니다.
 const emptyText = (value: string | null | undefined) => value || '-'
+
+// ISO 일시 문자열을 'YYYY-MM-DD HH:mm:ss' 형식으로 변환합니다.
 const formatDateTime = (value: string | null | undefined) => {
     return value ? value.replace('T', ' ').slice(0, 19) : '-'
 }
 
 const severityLabel = computed(() => (props.alarm ? severityLabels[props.alarm.severity] || props.alarm.severity : ''))
+
+// 알림 등급에 대응하는 뱃지 색상 variant를 반환합니다.
 const severityVariant = computed(() => {
     if (props.alarm?.severity === 'CRITICAL') {
         return 'danger'
@@ -85,6 +90,8 @@ const severityVariant = computed(() => {
     }
     return 'info'
 })
+
+// 정비 상태를 우선 반영하여 알림의 최종 조치 상태를 계산합니다.
 const actionStatus = computed<AlarmActionStatus | ''>(() => {
     if (!props.alarm) {
         return ''
@@ -94,10 +101,12 @@ const actionStatus = computed<AlarmActionStatus | ''>(() => {
     }
     return props.alarm.status === 'OPEN' ? 'OPEN' : 'ACKED'
 })
+
 const statusLabel = computed(() =>
     actionStatus.value ? actionStatusLabels[actionStatus.value] || actionStatus.value : '',
 )
 
+// 상세 패널에 표시할 키-값 목록을 구성합니다.
 const basicItems = computed(() => {
     if (!props.alarm) {
         return []

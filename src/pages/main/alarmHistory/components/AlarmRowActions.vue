@@ -25,12 +25,12 @@
 import type { AlarmItem } from '../service/alarmHistory.types'
 
 defineProps<{
-    alarm: AlarmItem
+    alarm: AlarmItem // 행 알림 데이터
 }>()
 
 const emit = defineEmits<{
-    ack: []
-    maintenance: []
+    ack: [] // 알림 확인 처리 요청
+    maintenance: [] // 정비 이력 등록 요청
 }>()
 </script>
 
