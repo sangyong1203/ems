@@ -5,7 +5,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import * as echarts from 'echarts'
-import { COLOR_TYPE } from '@/constants/colors'
+import { COLOR_TYPE, CHART_THEME } from '@/constants/colors'
 import type { EssRackTemperatureHistory } from '../service/ess.types'
 
 const props = defineProps<{
@@ -118,23 +118,19 @@ const drawChart = () => {
             itemWidth: 6,
             itemHeight: 6,
             textStyle: {
-                color: '#d9d4e3',
+                color: CHART_THEME.textColor,
                 fontSize: 10,
             },
             pageIconColor: COLOR_TYPE.PRIMARY,
             pageIconInactiveColor: 'rgba(255,255,255,0.18)',
             pageTextStyle: {
-                color: '#d9d4e3',
+                color: CHART_THEME.textColor,
             },
             data: props.series.map(rack => rack.rackName),
         },
         tooltip: {
             trigger: 'axis',
-            backgroundColor: 'rgba(255,255,255,0.92)',
-            borderWidth: 0,
-            textStyle: {
-                color: '#18202b',
-            },
+            ...CHART_THEME.tooltip,
             valueFormatter: (value: unknown) => {
                 return typeof value === 'number'
                     ? `${value.toLocaleString(undefined, { maximumFractionDigits: 1 })} °C`
@@ -144,10 +140,10 @@ const drawChart = () => {
         xAxis: {
             type: 'category',
             boundaryGap: false,
-            axisLine: { lineStyle: { color: 'rgba(255,255,255,0.16)' } },
+            axisLine: { lineStyle: { color: CHART_THEME.axisLineColor } },
             axisTick: { show: false },
             axisLabel: {
-                color: '#c9c1d4',
+                color: CHART_THEME.textColor,
                 formatter: formatTime,
             },
             data: times,
@@ -158,13 +154,13 @@ const drawChart = () => {
             max: temperatureAxisRange.value.max,
             splitNumber: 5,
             nameTextStyle: {
-                color: '#c9c1d4',
+                color: CHART_THEME.textColor,
                 fontSize: 11,
                 align: 'right',
                 padding: [0, 0, 0, 0],
             },
-            axisLabel: { color: '#c9c1d4' },
-            splitLine: { lineStyle: { color: 'rgba(255,255,255,0.08)' } },
+            axisLabel: { color: CHART_THEME.textColor },
+            splitLine: { lineStyle: { color: CHART_THEME.gridLineColor } },
         },
         series: props.series.map((rack, index) => {
             const dataByTime = new Map(rack.data.map(item => [item.measured_at, item.metric_value]))

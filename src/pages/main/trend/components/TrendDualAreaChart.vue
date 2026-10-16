@@ -5,7 +5,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import * as echarts from 'echarts'
-import { COLOR_TYPE } from '@/constants/colors'
+import { COLOR_TYPE, CHART_THEME } from '@/constants/colors'
 import type { TrendTelemetryPoint } from '../service/trend.types'
 
 const props = defineProps<{
@@ -45,7 +45,7 @@ const drawChart = () => {
             itemWidth: 10,
             itemHeight: 6,
             textStyle: {
-                color: '#c9c1d4',
+                color: CHART_THEME.textColor,
                 fontSize: 11,
             },
             data: [props.firstName, props.secondName],
@@ -64,10 +64,10 @@ const drawChart = () => {
         xAxis: {
             type: 'category',
             boundaryGap: false,
-            axisLine: { lineStyle: { color: 'rgba(255,255,255,0.16)' } },
+            axisLine: { lineStyle: { color: CHART_THEME.axisLineColor } },
             axisTick: { show: false },
             axisLabel: {
-                color: '#c9c1d4',
+                color: CHART_THEME.textColor,
                 formatter: (value: string) => value.slice(11, 16),
             },
             data: categories.value,
@@ -75,9 +75,9 @@ const drawChart = () => {
         yAxis: {
             type: 'value',
             name: props.unit,
-            nameTextStyle: { color: '#c9c1d4' },
-            axisLabel: { color: '#c9c1d4' },
-            splitLine: { lineStyle: { color: 'rgba(255,255,255,0.08)' } },
+            nameTextStyle: { color: CHART_THEME.textColor },
+            axisLabel: { color: CHART_THEME.textColor },
+            splitLine: { lineStyle: { color: CHART_THEME.gridLineColor } },
         },
         series: [
             {

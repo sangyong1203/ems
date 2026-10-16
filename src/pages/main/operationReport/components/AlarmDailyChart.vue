@@ -7,24 +7,24 @@ import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import type { ReportStatisticsPoint } from '../service/operationReport.types'
 import ReportEChart from './ReportEChart.vue'
+import { CHART_THEME, SEMANTIC_COLORS } from '@/constants/colors'
 
 const props = defineProps<{
     data: ReportStatisticsPoint[]
 }>()
 
-const chartTextColor = '#c9c1d4'
-const chartSplitLineColor = 'rgba(255,255,255,0.08)'
+const chartTextColor = CHART_THEME.textColor
+const chartSplitLineColor = CHART_THEME.gridLineColor
+const chartAxisLineColor = CHART_THEME.axisLineColor
 const chartGrid = { top: 36, right: 32, bottom: 30, left: 56 }
 const dates = computed(() => props.data.map(item => item.date))
 const formatDateLabel = (date: string) => date.slice(5)
 
 const chartOption = computed<EChartsOption>(() => ({
-    color: ['#e76dff'],
+    color: [SEMANTIC_COLORS.brand.primary],
     tooltip: {
         trigger: 'axis',
-        backgroundColor: 'rgba(255,255,255,0.92)',
-        borderWidth: 0,
-        textStyle: { color: '#18202b' },
+        ...CHART_THEME.tooltip,
     },
     grid: chartGrid,
     xAxis: {
@@ -32,7 +32,7 @@ const chartOption = computed<EChartsOption>(() => ({
         data: dates.value,
         axisLabel: { color: chartTextColor, formatter: formatDateLabel },
         axisTick: { show: false },
-        axisLine: { lineStyle: { color: 'rgba(255,255,255,0.16)' } },
+        axisLine: { lineStyle: { color: chartAxisLineColor } },
     },
     yAxis: {
         type: 'value',

@@ -7,25 +7,25 @@ import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import type { ReportStatisticsPoint } from '../service/operationReport.types'
 import ReportEChart from './ReportEChart.vue'
+import { CHART_THEME, SEMANTIC_COLORS } from '@/constants/colors'
 
 const props = defineProps<{
     data: ReportStatisticsPoint[]
 }>()
 
-const chartTextColor = '#c9c1d4'
-const chartSplitLineColor = 'rgba(255,255,255,0.08)'
+const chartTextColor = CHART_THEME.textColor
+const chartSplitLineColor = CHART_THEME.gridLineColor
+const chartAxisLineColor = CHART_THEME.axisLineColor
 const chartGrid = { top: 50, right: 38, bottom: 30, left: 56 }
 const dates = computed(() => props.data.map(item => item.date))
 const formatDateLabel = (date: string) => date.slice(5)
 const values = (key: keyof ReportStatisticsPoint) => props.data.map(item => Number(item[key] ?? 0))
 
 const chartOption = computed<EChartsOption>(() => ({
-    color: ['#15e0b7', '#e76dff'],
+    color: [SEMANTIC_COLORS.domain.solar, SEMANTIC_COLORS.domain.battery],
     tooltip: {
         trigger: 'axis',
-        backgroundColor: 'rgba(255,255,255,0.92)',
-        borderWidth: 0,
-        textStyle: { color: '#18202b' },
+        ...CHART_THEME.tooltip,
     },
     legend: { top: 0, right: 5, textStyle: { color: chartTextColor, fontSize: 10 } },
     grid: chartGrid,
@@ -34,7 +34,7 @@ const chartOption = computed<EChartsOption>(() => ({
         data: dates.value,
         axisLabel: { color: chartTextColor, formatter: formatDateLabel },
         axisTick: { show: false },
-        axisLine: { lineStyle: { color: 'rgba(255,255,255,0.16)' } },
+        axisLine: { lineStyle: { color: chartAxisLineColor } },
     },
     yAxis: [
         {
@@ -69,7 +69,7 @@ const chartOption = computed<EChartsOption>(() => ({
             yAxisIndex: 1,
             smooth: true,
             showSymbol: false,
-            lineStyle: { width: 2, color: '#e76dff' },
+            lineStyle: { width: 2, color: SEMANTIC_COLORS.domain.battery },
             data: values('temperature_c'),
         },
     ],

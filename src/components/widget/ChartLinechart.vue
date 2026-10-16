@@ -7,7 +7,7 @@
 <script lang="ts" setup>
 import { onMounted, reactive, ref, toRefs, watch } from 'vue'
 import * as echarts from 'echarts'
-import { CHART_COLOR } from '@/constants/colors'
+import { CHART_COLOR, CHART_THEME } from '@/constants/colors'
 
 export interface Props {
     title: string
@@ -49,7 +49,7 @@ const {
 const chartRef = ref(null)
 let myChart: any = null
 let option = reactive({
-    color: color.value ?? ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4'],
+    color: color.value ?? [...CHART_THEME.palette],
 
     legend: {
         data: legendData.value,

@@ -1,0 +1,60 @@
+// ============================================================================
+// Tier 2: Semantic Tokens (Meaning & Role Based)
+// ============================================================================
+
+:root {
+  // Brand
+  --color-brand-primary: var(--palette-violet-500);
+  --color-brand-secondary: var(--palette-teal-400);
+  --color-brand-accent: var(--palette-violet-500);
+  --color-brand-accent-soft: var(--palette-violet-alpha-24);
+  --color-brand-primary-soft: var(--palette-violet-alpha-18);
+  --color-brand-cyan: var(--palette-teal-400);
+
+  // Surface & Background (Elevation 4단계)
+  --color-surface-deep: var(--palette-slate-950); // 앱 최하단 베이스 (#151822)
+  --color-surface-base: var(--palette-slate-900); // 기본 패널, 사이드바 (#171a24)
+  --color-surface-panel: var(--palette-slate-850); // 차트 및 데이터 패널 (#181b25)
+  --color-surface-elevated: var(--palette-slate-800); // 모달, 팝오버, 툴팁 (#1d2130)
+  --color-surface-glass: rgba(24, 27, 37, 0.48); // 글래스 오버레이 패널
+  --color-surface-control: var(--palette-slate-900); // 폼 컨트롤 배경
+  --color-surface-hover: var(--palette-white-alpha-08); // 요소 호버 시 강조
+  --color-surface-muted: var(--palette-white-alpha-04);
+
+  // Typography (명도 대비 위계)
+  --color-text-high: var(--palette-white); // 순백색 고대비 (#ffffff)
+  --color-text-primary: var(--palette-gray-50); // 주요 제목/라벨 (#f5f5f5)
+  --color-text-strong: var(--palette-gray-100); // 볼드 텍스트 (#f4f1f8)
+  --color-text-body: var(--palette-gray-200); // 본문 기본 텍스트 (#d8d1e0)
+  --color-text-secondary: var(--palette-gray-300); // 서브 텍스트, 차트 축/라벨 (#c9c1d4)
+  --color-text-muted: var(--palette-gray-400); // 비활성/보조 설명 (#9f98aa)
+  --color-text-placeholder: var(--palette-white-alpha-38); // 입력창 플레이스홀더
+
+  // Border & Divider
+  --color-border-subtle: var(--palette-white-alpha-08); // 기본 구분선/테두리
+  --color-border-strong: var(--palette-white-alpha-16); // 강조 테두리
+  --color-border-brand: var(--palette-violet-alpha-24); // 브랜드 강조 테두리
+  --color-border-focus: #dedede; // 포커스 링 테두리
+
+  // Status & Feedback
+  --color-status-danger: var(--palette-red-500); // 에러, 위험 알람 (#ff383c)
+  --color-status-danger-text: var(--palette-red-300); // 락/경고 태그 텍스트 (#ff7478)
+  --color-status-danger-bg: var(--palette-red-alpha-12);
+  --color-status-danger-border: var(--palette-red-alpha-32);
+
+  --color-status-warning: var(--palette-orange-400); // 경고/주의 (#f19c4d)
+  --color-status-caution: var(--palette-yellow-400); // 단순 주의 (#fbbc05)
+  --color-status-success: var(--palette-green-500); // 정상/성공 (#56ba64)
+  --color-status-info: var(--palette-blue-400); // 정보/계통 (#4ca5d7)
+
+  // EMS Domain Specific
+  --color-domain-solar: var(--palette-teal-400); // 태양광 발전 (#15e0b7)
+  --color-domain-battery: var(--palette-violet-500); // ESS 배터리 충/방전 (#e76dff)
+  --color-domain-grid: var(--palette-blue-400); // 계통(한전/Grid) 연계 (#4ca5d7)
+  --color-domain-load: var(--palette-orange-400); // 부하 소비 (#f19c4d)
+
+  // Chart Elements
+  --color-chart-text: var(--color-text-secondary);
+  --color-chart-grid: var(--color-border-subtle);
+  --color-chart-tooltip-bg: var(--color-surface-elevated);
+}

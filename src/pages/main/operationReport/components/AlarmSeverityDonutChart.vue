@@ -7,17 +7,14 @@ import { computed } from 'vue'
 import type { EChartsOption } from 'echarts'
 import type { AlarmSeverityDistribution } from '../service/operationReport.types'
 import ReportEChart from './ReportEChart.vue'
+import { CHART_THEME } from '@/constants/colors'
 
 const props = defineProps<{
     data: AlarmSeverityDistribution[]
 }>()
 
-const chartTextColor = '#c9c1d4'
-const severityColors: Record<string, string> = {
-    CRITICAL: 'rgba(255, 107, 143, 0.72)',
-    WARNING: 'rgba(231, 109, 255, 0.72)',
-    INFO: 'rgba(21, 224, 183, 0.72)',
-}
+const chartTextColor = CHART_THEME.textColor
+const severityColors: Record<string, string> = CHART_THEME.severity
 
 const severityLabel = (severity: string) => {
     const labels: Record<string, string> = {
@@ -35,9 +32,7 @@ const severityColor = (severity: string) => {
 const chartOption = computed<EChartsOption>(() => ({
     tooltip: {
         trigger: 'item',
-        backgroundColor: 'rgba(255,255,255,0.92)',
-        borderWidth: 0,
-        textStyle: { color: '#18202b' },
+        ...CHART_THEME.tooltip,
     },
     legend: { top: 0, right: 0, textStyle: { color: chartTextColor, fontSize: 10 } },
     series: [

@@ -5,6 +5,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import * as echarts from 'echarts'
+import { CHART_THEME, SEMANTIC_COLORS, PRIMITIVE_COLORS } from '@/constants/colors'
 
 export type EssPowerChartPoint = {
     measured_at: string
@@ -58,14 +59,14 @@ const drawChart = () => {
     }
 
     chart.setOption({
-        color: ['#15e0b7', '#e76dff', '#35d8ff'],
+        color: [SEMANTIC_COLORS.domain.solar, SEMANTIC_COLORS.domain.battery, PRIMITIVE_COLORS.cyan[400]],
         legend: {
             top: 0,
             right: 0,
             itemWidth: 12,
             itemHeight: 8,
             textStyle: {
-                color: '#c9c1d4',
+                color: CHART_THEME.textColor,
                 fontSize: 12,
             },
             data: ['방전 전력 (kW)', '충전 전력 (kW)', 'SOC (%)'],
@@ -78,19 +79,15 @@ const drawChart = () => {
         },
         tooltip: {
             trigger: 'axis',
-            backgroundColor: 'rgba(255,255,255,0.92)',
-            borderWidth: 0,
-            textStyle: {
-                color: '#18202b',
-            },
+            ...CHART_THEME.tooltip,
         },
         xAxis: {
             type: 'category',
             boundaryGap: true,
-            axisLine: { lineStyle: { color: 'rgba(255,255,255,0.16)' } },
+            axisLine: { lineStyle: { color: CHART_THEME.axisLineColor } },
             axisTick: { show: false },
             axisLabel: {
-                color: '#c9c1d4',
+                color: CHART_THEME.textColor,
                 formatter: (value: string) => value.slice(11, 16),
             },
             data: categories.value,
@@ -106,15 +103,15 @@ const drawChart = () => {
                 splitNumber: props.leftSplitNumber,
                 interval: powerAxisMax.value / props.leftSplitNumber,
                 nameTextStyle: {
-                    color: '#c9c1d4',
+                    color: CHART_THEME.textColor,
                     fontSize: 11,
                     align: 'right',
                     padding: [0, 0, 0, 0],
                 },
-                axisLabel: { color: '#c9c1d4' },
+                axisLabel: { color: CHART_THEME.textColor },
                 splitLine: {
                     lineStyle: {
-                        color: 'rgba(255,255,255,0.08)',
+                        color: CHART_THEME.gridLineColor,
                         type: 'dashed',
                     },
                 },
@@ -129,12 +126,12 @@ const drawChart = () => {
                 splitNumber: props.rightSplitNumber,
                 interval: 100 / props.rightSplitNumber,
                 nameTextStyle: {
-                    color: '#c9c1d4',
+                    color: CHART_THEME.textColor,
                     fontSize: 12,
                     align: 'left',
                     padding: [0, 0, 0, 0],
                 },
-                axisLabel: { color: '#c9c1d4' },
+                axisLabel: { color: CHART_THEME.textColor },
                 splitLine: { show: false },
             },
         ],
@@ -173,12 +170,12 @@ const drawChart = () => {
                 showSymbol: false,
                 lineStyle: {
                     width: 3,
-                    color: '#35d8ff',
+                    color: PRIMITIVE_COLORS.cyan[400],
                     shadowBlur: 12,
                     shadowColor: 'rgba(53, 216, 255, 0.32)',
                 },
                 itemStyle: {
-                    color: '#35d8ff',
+                    color: PRIMITIVE_COLORS.cyan[400],
                 },
                 data: valuesByTime(props.socData),
             },

@@ -5,7 +5,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import * as echarts from 'echarts'
-import { COLOR_TYPE } from '@/constants/colors'
+import { COLOR_TYPE, CHART_THEME } from '@/constants/colors'
 import type { EssTelemetryPoint } from '../service/ess.types'
 
 const props = defineProps<{
@@ -114,18 +114,14 @@ const drawChart = () => {
             itemWidth: 10,
             itemHeight: 6,
             textStyle: {
-                color: '#d9d4e3',
+                color: CHART_THEME.textColor,
                 fontSize: 10,
             },
             data: ['전압 (V)', 'SOC (%)'],
         },
         tooltip: {
             trigger: 'axis',
-            backgroundColor: 'rgba(255,255,255,0.92)',
-            borderWidth: 0,
-            textStyle: {
-                color: '#18202b',
-            },
+            ...CHART_THEME.tooltip,
             formatter: (params: ChartTooltipParam | ChartTooltipParam[]) => {
                 const items = Array.isArray(params) ? params : [params]
                 const time = items[0]?.axisValueLabel ?? ''
@@ -141,10 +137,10 @@ const drawChart = () => {
         xAxis: {
             type: 'category',
             boundaryGap: false,
-            axisLine: { lineStyle: { color: 'rgba(255,255,255,0.16)' } },
+            axisLine: { lineStyle: { color: CHART_THEME.axisLineColor } },
             axisTick: { show: false },
             axisLabel: {
-                color: '#c9c1d4',
+                color: CHART_THEME.textColor,
                 formatter: formatTime,
             },
             data: times,
@@ -157,13 +153,13 @@ const drawChart = () => {
                 max: 100,
                 interval: 25,
                 nameTextStyle: {
-                    color: '#c9c1d4',
+                    color: CHART_THEME.textColor,
                     fontSize: 11,
                     align: 'right',
                     padding: [0, 0, 0, 0],
                 },
-                axisLabel: { color: '#c9c1d4' },
-                splitLine: { lineStyle: { color: 'rgba(255,255,255,0.08)' } },
+                axisLabel: { color: CHART_THEME.textColor },
+                splitLine: { lineStyle: { color: CHART_THEME.gridLineColor } },
             },
             {
                 type: 'value',
@@ -172,12 +168,12 @@ const drawChart = () => {
                 max: voltageAxisRange.value.max,
                 interval: voltageAxisRange.value.interval,
                 nameTextStyle: {
-                    color: '#c9c1d4',
+                    color: CHART_THEME.textColor,
                     fontSize: 11,
                     align: 'left',
                     padding: [0, 0, 0, 0],
                 },
-                axisLabel: { color: '#c9c1d4' },
+                axisLabel: { color: CHART_THEME.textColor },
                 splitLine: { show: false },
             },
         ],
