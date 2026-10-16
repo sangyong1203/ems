@@ -252,25 +252,25 @@ import PvStringFormDialog from './components/PvStringFormDialog.vue'
 import deviceManagementApi from './service/deviceManagement.api'
 import type { DeviceItem, DeviceSaveParams, PvStringItem, PvStringSaveParams } from './service/deviceManagement.types'
 
-const devices = ref<DeviceItem[]>([])
-const pvStrings = ref<PvStringItem[]>([])
-const allPvStrings = ref<PvStringItem[]>([])
-const selectedDevice = ref<DeviceItem | null>(null)
-const selectedPvString = ref<PvStringItem | null>(null)
-const editingDevice = ref<DeviceItem | null>(null)
-const editingPvString = ref<PvStringItem | null>(null)
-const isFormDialogOpen = ref(false)
-const isPvStringFormDialogOpen = ref(false)
-const updatingActiveDeviceIds = ref(new Set<number>())
-const activeTab = ref<'devices' | 'pvStrings'>('devices')
+const devices = ref<DeviceItem[]>([]) // 장비 목록
+const pvStrings = ref<PvStringItem[]>([]) // PV 스트링 목록
+const allPvStrings = ref<PvStringItem[]>([]) // 전체 PV 스트링 목록 (인버터 매핑용)
+const selectedDevice = ref<DeviceItem | null>(null) // 선택된 장비 상세
+const selectedPvString = ref<PvStringItem | null>(null) // 선택된 PV 스트링 상세
+const editingDevice = ref<DeviceItem | null>(null) // 편집 중인 장비 정보
+const editingPvString = ref<PvStringItem | null>(null) // 편집 중인 PV 스트링 정보
+const isFormDialogOpen = ref(false) // 장비 등록/수정 모달 표시 여부
+const isPvStringFormDialogOpen = ref(false) // PV 스트링 등록/수정 모달 표시 여부
+const updatingActiveDeviceIds = ref(new Set<number>()) // 활성화 상태 변경 중인 장비 ID 셋
+const activeTab = ref<'devices' | 'pvStrings'>('devices') // 활성 탭 (장비 관리 / PV 스트링 관리)
 
-const searchParams = reactive({
+const searchParams = reactive({ // 장비 검색 조건
     keyword: '',
     deviceType: '',
     status: '',
 })
 
-const pvStringSearchParams = reactive({
+const pvStringSearchParams = reactive({ // PV 스트링 검색 조건
     keyword: '',
     status: '',
     connection: '',
@@ -354,6 +354,7 @@ const kpiItems = computed(() => [
     },
 ])
 
+// deviceTypeLabel 장비 유형 코드 한국어 라벨 반환
 const deviceTypeLabel = (value: string) => {
     const labels: Record<string, string> = {
         INVERTER: '인버터',
@@ -371,6 +372,7 @@ const deviceTypeLabel = (value: string) => {
     return labels[value] || value || '-'
 }
 
+// statusLabel 장비 운영 상태 코드 한국어 라벨 반환
 const statusLabel = (value: string) => {
     const labels: Record<string, string> = {
         NORMAL: '정상',
@@ -382,6 +384,7 @@ const statusLabel = (value: string) => {
     return labels[value] || value || '-'
 }
 
+// statusVariant 장비 운영 상태에 따른 배지 스타일 반환
 const statusVariant = (value: string) => {
     if (value === 'NORMAL') {
         return 'success'
@@ -395,6 +398,7 @@ const statusVariant = (value: string) => {
     return 'muted'
 }
 
+// capacityText 정격 용량 및 단위 문자열 포맷팅
 const capacityText = (device: DeviceItem) => {
     if (device.capacity === null || device.capacity === undefined) {
         return '-'
@@ -402,14 +406,17 @@ const capacityText = (device: DeviceItem) => {
     return `${Number(device.capacity).toLocaleString(undefined, { maximumFractionDigits: 1 })} ${device.capacity_unit || ''}`.trim()
 }
 
+// selectDevice 장비 행 선택
 const selectDevice = (device: DeviceItem) => {
     selectedDevice.value = device
 }
 
+// selectPvString PV 스트링 행 선택
 const selectPvString = (pvString: PvStringItem) => {
     selectedPvString.value = pvString
 }
 
+// getDevices 조건에 따른 장비 목록 조회
 const getDevices = async () => {
     const res = await deviceManagementApi.getList(searchParams)
     if (isSuccessResponse(res.result)) {
@@ -423,6 +430,7 @@ const getDevices = async () => {
     }
 }
 
+// getPvStrings 조건에 따른 PV 스트링 목록 조회
 const getPvStrings = async () => {
     const res = await deviceManagementApi.getPvStrings(pvStringSearchParams)
     if (isSuccessResponse(res.result)) {
@@ -436,6 +444,7 @@ const getPvStrings = async () => {
     }
 }
 
+// getAllPvStrings 인버터 연결용 전체 PV 스트링 목록 조회
 const getAllPvStrings = async () => {
     const res = await deviceManagementApi.getPvStrings()
     if (isSuccessResponse(res.result)) {
@@ -443,28 +452,33 @@ const getAllPvStrings = async () => {
     }
 }
 
+// openCreateDialog 신규 장비 등록 모달 열기
 const openCreateDialog = () => {
     editingDevice.value = null
     getAllPvStrings()
     isFormDialogOpen.value = true
 }
 
+// openEditDialog 기존 장비 수정 모달 열기
 const openEditDialog = (device: DeviceItem) => {
     editingDevice.value = device
     getAllPvStrings()
     isFormDialogOpen.value = true
 }
 
+// openCreatePvStringDialog 신규 PV 스트링 등록 모달 열기
 const openCreatePvStringDialog = () => {
     editingPvString.value = null
     isPvStringFormDialogOpen.value = true
 }
 
+// openEditPvStringDialog 기존 PV 스트링 수정 모달 열기
 const openEditPvStringDialog = (pvString: PvStringItem) => {
     editingPvString.value = pvString
     isPvStringFormDialogOpen.value = true
 }
 
+// saveDevice 장비 정보 저장 (생성 또는 수정)
 const saveDevice = async (params: DeviceSaveParams) => {
     if (editingDevice.value) {
         await deviceManagementApi.updateDevice(editingDevice.value.id, params)
@@ -477,6 +491,7 @@ const saveDevice = async (params: DeviceSaveParams) => {
     await getAllPvStrings()
 }
 
+// savePvString PV 스트링 정보 저장 (생성 또는 수정)
 const savePvString = async (params: PvStringSaveParams) => {
     if (editingPvString.value) {
         await deviceManagementApi.updatePvString(editingPvString.value.id, params)
@@ -488,6 +503,7 @@ const savePvString = async (params: PvStringSaveParams) => {
     await getAllPvStrings()
 }
 
+// toggleDeviceActive 장비 운영 활성화/비활성화 토글
 const toggleDeviceActive = async (device: DeviceItem) => {
     const previousValue = !device.is_active
     updatingActiveDeviceIds.value.add(device.id)
@@ -509,6 +525,7 @@ const toggleDeviceActive = async (device: DeviceItem) => {
     }
 }
 
+// deleteDevice 장비 삭제 확인 및 처리
 const deleteDevice = async (device: DeviceItem) => {
     await ElMessageBox.confirm(`${device.name} 장비를 삭제할까요?`, 'Confirm', {
         confirmButtonText: '삭제',
@@ -522,6 +539,7 @@ const deleteDevice = async (device: DeviceItem) => {
     await getAllPvStrings()
 }
 
+// deletePvString PV 스트링 삭제 확인 및 처리
 const deletePvString = async (pvString: PvStringItem) => {
     await ElMessageBox.confirm(`${pvString.name} 스트링을 삭제할까요?`, 'Confirm', {
         confirmButtonText: '삭제',
@@ -535,6 +553,7 @@ const deletePvString = async (pvString: PvStringItem) => {
     await getAllPvStrings()
 }
 
+// numberText 수치 및 단위 문자열 포맷팅
 const numberText = (value: number | null, unit: string) => {
     if (value === null || value === undefined) {
         return '-'
@@ -542,6 +561,7 @@ const numberText = (value: number | null, unit: string) => {
     return `${Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 })} ${unit}`
 }
 
+// watch(searchParams.keyword) 키워드 초기화 시 장비 목록 재조회
 watch(
     () => searchParams.keyword,
     (keyword, prevKeyword) => {
@@ -551,6 +571,7 @@ watch(
     },
 )
 
+// watch(pvStringSearchParams.keyword) 키워드 초기화 시 스트링 목록 재조회
 watch(
     () => pvStringSearchParams.keyword,
     (keyword, prevKeyword) => {
@@ -560,6 +581,7 @@ watch(
     },
 )
 
+// onMounted 초기 장비 및 PV 스트링 목록 조회
 onMounted(() => {
     getDevices()
     getPvStrings()

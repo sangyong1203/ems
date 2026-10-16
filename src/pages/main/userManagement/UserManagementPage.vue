@@ -94,10 +94,10 @@ import UserFormDialog from './components/UserFormDialog.vue'
 import userManagementApi from './service/userManagement.api.ts'
 import type { RequestParams, UserItem, UserRole, UserSaveParams, UserStatus } from './service/userManagement.types.ts'
 
-const tableData = ref<UserItem[]>([])
-const totalCount = ref(0)
-const isDialogOpen = ref(false)
-const editingUser = ref<UserItem | null>(null)
+const tableData = ref<UserItem[]>([]) // 사용자 목록 데이터
+const totalCount = ref(0) // 전체 사용자 수
+const isDialogOpen = ref(false) // 사용자 등록/수정 모달 표시 여부
+const editingUser = ref<UserItem | null>(null) // 편집 중인 사용자 정보 (신규 등록 시 null)
 
 const roleOptions: Array<{ label: UserRole; value: UserRole }> = [
     { label: 'Platform Admin', value: 'Platform Admin' },
@@ -111,7 +111,7 @@ const statusOptions: Array<{ label: UserStatus; value: UserStatus }> = [
     { label: 'Locked', value: 'Locked' },
 ]
 
-const searchParams = reactive<RequestParams>({
+const searchParams = reactive<RequestParams>({ // 사용자 검색 조건
     keyword: '',
     role: '',
     status: '',
@@ -119,26 +119,31 @@ const searchParams = reactive<RequestParams>({
     pageSize: 10,
 })
 
+// onMounted 초기 사용자 목록 조회
 onMounted(async () => {
     await searchData()
 })
 
+// searchData 검색 조건 초기화 후 사용자 목록 조회
 const searchData = async () => {
     searchParams.pageNumber = 1
     await getList()
 }
 
+// changePage 페이지 번호 변경
 const changePage = async (page: number) => {
     searchParams.pageNumber = page
     await getList()
 }
 
+// changePageSize 페이지 크기 변경
 const changePageSize = async (pageSize: number) => {
     searchParams.pageNumber = 1
     searchParams.pageSize = pageSize
     await getList()
 }
 
+// getList 사용자 목록 API 조회
 const getList = async () => {
     try {
         const res = await userManagementApi.getList(searchParams)
@@ -159,20 +164,24 @@ const getList = async () => {
     }
 }
 
+// openCreateDialog 신규 사용자 등록 모달 열기
 const openCreateDialog = () => {
     editingUser.value = null
     isDialogOpen.value = true
 }
 
+// openEditDialog 기존 사용자 수정 모달 열기
 const openEditDialog = (row: UserItem) => {
     editingUser.value = row
     isDialogOpen.value = true
 }
 
+// closeDialog 사용자 모달 닫기
 const closeDialog = () => {
     isDialogOpen.value = false
 }
 
+// saveUser 사용자 생성 또는 수정 저장
 const saveUser = async (payload: UserSaveParams) => {
     const res = editingUser.value?.id
         ? await userManagementApi.updateUser(editingUser.value.id, payload)
@@ -188,6 +197,7 @@ const saveUser = async (payload: UserSaveParams) => {
     closeDialog()
 }
 
+// confirmDeleteUser 사용자 삭제 확인 팝업 호출
 const confirmDeleteUser = async (row: UserItem) => {
     try {
         await ElMessageBox.confirm(`Delete ${row.name}?`, 'Confirm', {
@@ -203,6 +213,7 @@ const confirmDeleteUser = async (row: UserItem) => {
     }
 }
 
+// deleteUser 사용자 삭제 API 호출
 const deleteUser = async (row: UserItem) => {
     const res = await userManagementApi.deleteUser(row.id)
     if (!isSuccessResponse(res.result)) {

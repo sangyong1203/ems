@@ -35,7 +35,7 @@ import { GlassPanel, KeyValueList } from '@/components'
 import type { MaintenanceItem } from '../service/maintenanceManagement.types'
 
 const props = defineProps<{
-    maintenance: MaintenanceItem | null
+    maintenance: MaintenanceItem | null // 선택된 정비 이력 상세 데이터
 }>()
 
 const statusLabels: Record<string, string> = {
@@ -46,6 +46,7 @@ const statusLabels: Record<string, string> = {
     CANCELED: '취소',
 }
 
+// emptyText 값이 비어있는 경우 대시(-) 반환
 const emptyText = (value: string | null | undefined) => value || '-'
 
 const statusLabel = computed(() => {

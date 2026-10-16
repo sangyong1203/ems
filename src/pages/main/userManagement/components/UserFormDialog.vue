@@ -50,18 +50,18 @@ type SelectOption<T extends string> = {
 }
 
 const props = defineProps<{
-    modelValue: boolean
-    editingUser: UserItem | null
+    modelValue: boolean // 모달 표시 여부
+    editingUser: UserItem | null // 수정 대상 사용자 정보 (신규 등록 시 null)
 }>()
 
 const emit = defineEmits<{
-    'update:modelValue': [value: boolean]
-    submit: [payload: UserSaveParams]
-    cancel: []
+    'update:modelValue': [value: boolean] // 모달 표시 상태 업데이트
+    submit: [payload: UserSaveParams] // 사용자 저장 이벤트
+    cancel: [] // 취소 이벤트
 }>()
 
-const formRef = ref<FormInstance | null>(null)
-const form = reactive<UserSaveParams>({
+const formRef = ref<FormInstance | null>(null) // 엘리먼트 폼 인스턴스
+const form = reactive<UserSaveParams>({ // 사용자 입력 폼 데이터
     name: '',
     email: '',
     department: '',
@@ -81,7 +81,7 @@ const statusOptions: Array<SelectOption<UserStatus>> = [
     { label: 'Locked', value: 'Locked' },
 ]
 
-const rules: FormRules = {
+const rules: FormRules = { // 폼 유효성 검사 규칙
     name: [{ required: true, message: 'Please enter a name.', trigger: 'blur' }],
     email: [
         { required: true, message: 'Please enter an email.', trigger: 'blur' },
@@ -101,6 +101,7 @@ const rules: FormRules = {
     status: [{ required: true, message: 'Please select a status.', trigger: 'change' }],
 }
 
+// resetForm 폼 입력값 기본값 초기화
 const resetForm = () => {
     form.name = ''
     form.email = ''
@@ -109,6 +110,7 @@ const resetForm = () => {
     form.status = 'Active'
 }
 
+// watch(props) 모달 열릴 때 사용자 데이터 바인딩 및 유효성 검사 초기화
 watch(
     () => [props.modelValue, props.editingUser] as const,
     async ([isOpen, user]) => {
@@ -130,10 +132,12 @@ watch(
     { immediate: true },
 )
 
+// clearValidate 폼 유효성 검증 오류 메시지 제거
 const clearValidate = () => {
     formRef.value?.clearValidate()
 }
 
+// handleSave 폼 유효성 검증 후 사용자 저장 전달
 const handleSave = async () => {
     const isValid = await formRef.value?.validate().catch(() => false)
     if (!isValid) return

@@ -108,7 +108,7 @@ import { GlassPanel } from '@/components'
 import type { DeviceItem } from '../service/deviceManagement.types'
 
 const props = defineProps<{
-    device: DeviceItem | null
+    device: DeviceItem | null // 선택된 장비 상세 정보
 }>()
 
 const ipPortText = computed(() => {
@@ -129,6 +129,7 @@ const capacityDetailLabel = computed(() =>
     ['WEATHER_SENSOR', 'SENSOR'].includes(props.device?.device_type ?? '') ? '측정 범위' : '정격 용량',
 )
 
+// deviceTypeLabel 장비 유형 코드 한국어 라벨 반환
 const deviceTypeLabel = (value: string) => {
     const labels: Record<string, string> = {
         INVERTER: '인버터',
@@ -146,6 +147,7 @@ const deviceTypeLabel = (value: string) => {
     return labels[value] || value || '-'
 }
 
+// statusLabel 장비 운영 상태 코드 한국어 라벨 반환
 const statusLabel = (value: string) => {
     const labels: Record<string, string> = {
         NORMAL: '정상',
@@ -157,6 +159,7 @@ const statusLabel = (value: string) => {
     return labels[value] || value || '-'
 }
 
+// capacityText 정격 용량 및 단위 문자열 포맷팅
 const capacityText = (device: DeviceItem) => {
     if (device.capacity === null || device.capacity === undefined) {
         return '-'

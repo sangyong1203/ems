@@ -59,15 +59,15 @@ import type { MetricCardItem } from '@/components/widget/MetricCardRow.vue'
 import type { KeyValueItem } from '@/components/widget/KeyValueList.vue'
 
 defineProps<{
-    items: MetricCardItem[]
-    essSoc: number
-    essMode: string
-    essStatusLabel: string
-    essStatusTone: 'normal' | 'warning' | 'fault' | 'unknown'
-    essItems: KeyValueItem[]
-    inverterNormal: number
-    inverterWarning: number
-    inverterTotal: number
+    items: MetricCardItem[] // 운영 주요 지표 카드 목록
+    essSoc: number // ESS 충전율 (SOC %)
+    essMode: string // ESS 운전 모드 라벨 (충전/방전/대기)
+    essStatusLabel: string // ESS 종합 상태 텍스트
+    essStatusTone: 'normal' | 'warning' | 'fault' | 'unknown' // ESS 상태 톤
+    essItems: KeyValueItem[] // ESS 세부 속성 목록 (SOH, PCS, BMS 등)
+    inverterNormal: number // 정상 인버터 대수
+    inverterWarning: number // 이상/경고 인버터 대수
+    inverterTotal: number // 전체 인버터 대수
 }>()
 </script>
 

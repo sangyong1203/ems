@@ -47,10 +47,11 @@ import { Message, Notification } from '@/composables/useFeedback'
 import { loadingSvgContent, loadingSvgViewBox } from '@/composables/useProgressBar'
 import { addComma, localeDateFormat } from '@/utils'
 
-const isTableLoading = ref(true)
-const tableData = ref<TemplateList[]>([])
-const totalCount = ref(0)
+const isTableLoading = ref(true) // 테이블 로딩 상태
+const tableData = ref<TemplateList[]>([]) // 알림 템플릿 목록 데이터
+const totalCount = ref(0) // 전체 알림 템플릿 건수
 
+// addTemplate 신규 템플릿 등록 페이지로 이동
 const addTemplate = () => {
     router.push({
         path: '/notificationManagement/templateList/addTemplate',
@@ -58,6 +59,7 @@ const addTemplate = () => {
     })
 }
 
+// editTemplate 템플릿 상세/수정 페이지로 이동
 const editTemplate = (row: any) => {
     router.push({
         path: '/notificationManagement/templateList/addTemplate',
@@ -65,7 +67,7 @@ const editTemplate = (row: any) => {
     })
 }
 
-const searchParams = reactive<SearchParams>({
+const searchParams = reactive<SearchParams>({ // 알림 템플릿 검색 조건
     activeFlag: ['Y', 'N'],
     searchType: '',
     pageNumber: 1,
@@ -74,9 +76,12 @@ const searchParams = reactive<SearchParams>({
     sortDirection: '',
 })
 
+// onMounted 초기 템플릿 목록 조회
 onMounted(async () => {
     await getList()
 })
+
+// searchData 검색 조건 검증 후 목록 재조회
 const searchData = () => {
     if (!searchParams.activeFlag?.length) {
         Notification.warning('Please select at least one option.')
@@ -87,7 +92,9 @@ const searchData = () => {
     getList()
 }
 
-const previousActiveFlag = ref<string[]>([...(searchParams.activeFlag || [])])
+const previousActiveFlag = ref<string[]>([...(searchParams.activeFlag || [])]) // 직전 사용 여부 선택값 캐시
+
+// checkInUse 사용 여부 체크박스 변경 시 유효성 검증 및 조회
 const checkInUse = (values: CheckboxValueType[]) => {
     const selected = values.map(value => String(value))
 
@@ -102,11 +109,13 @@ const checkInUse = (values: CheckboxValueType[]) => {
     getList()
 }
 
+// showCheckWarning 최소 선택 알림 표시
 const showCheckWarning = () => {
     Notification.warning('Please select at least one.')
     return
 }
 
+// getList 알림 템플릿 목록 API 조회
 const getList = async () => {
     if (searchParams.searchType == undefined) {
         searchParams.searchType = ''

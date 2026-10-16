@@ -8,9 +8,9 @@
 import { computed } from 'vue'
 
 const props = defineProps<{
-    variant: 'solar-load' | 'solar-ess' | 'ess-load' | 'grid-load' | 'solar-grid' | 'ess-grid'
-    value: number
-    suffix?: string
+    variant: 'solar-load' | 'solar-ess' | 'ess-load' | 'grid-load' | 'solar-grid' | 'ess-grid' // 조류 선로 구간 종류
+    value: number // 전력 흐름량 (kW)
+    suffix?: string // 접미사 텍스트
 }>()
 
 const active = computed(() => Number(props.value || 0) > 0)

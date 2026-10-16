@@ -24,19 +24,21 @@ import { Message } from '@/composables/useFeedback'
 import { isSuccessResponse } from '@/utils'
 import settingsApi from '../service/settings.api'
 
+// 시뮬레이터 동작 키 타입
 type SimulatorActionKey = 'today' | 'last7Days' | 'alarms' | 'maintenance' | 'reset'
 
+// 시뮬레이터 동작 설정 타입
 type SimulatorAction = {
-    key: SimulatorActionKey
-    title: string
-    description: string
-    buttonLabel: string
-    danger?: boolean
+    key: SimulatorActionKey // 동작 식별자
+    title: string // 동작 제목
+    description: string // 동작 상세 설명
+    buttonLabel: string // 버튼 레이블
+    danger?: boolean // 위험 동작 여부
 }
 
-const runningAction = ref<SimulatorActionKey | null>(null)
+const runningAction = ref<SimulatorActionKey | null>(null) // 실행 중인 동작 식별자
 
-const simulatorActions: SimulatorAction[] = [
+const simulatorActions: SimulatorAction[] = [ // 시뮬레이터 동작 목록 정의
     {
         key: 'today',
         title: '오늘 데이터 생성',
@@ -70,6 +72,7 @@ const simulatorActions: SimulatorAction[] = [
     },
 ]
 
+// 전체 가상 데이터 초기화 확인 및 실행
 const resetSimulator = async () => {
     try {
         await ElMessageBox.confirm('가상 데이터를 모두 초기화하시겠습니까?', '전체 데이터 초기화', {
@@ -84,6 +87,7 @@ const resetSimulator = async () => {
     return await settingsApi.resetSimulator()
 }
 
+// 시뮬레이터 동작 실행
 const runSimulatorAction = async (action: SimulatorActionKey) => {
     runningAction.value = action
     try {

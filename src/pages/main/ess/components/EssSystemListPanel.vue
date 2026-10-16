@@ -46,23 +46,26 @@ import EssBattery from '@/components/custom/EssBattery.vue'
 import type { EssSystemItem, EssSystemSummary } from '../service/ess.types'
 
 defineProps<{
-    systems: EssSystemItem[]
-    summary: EssSystemSummary | null
-    selectedSystemId: number | null
+    systems: EssSystemItem[] // ESS 시스템 목록
+    summary: EssSystemSummary | null // ESS 전체 현황 요약
+    selectedSystemId: number | null // 선택된 ESS 시스템 ID
 }>()
 
 defineEmits<{
-    select: [systemId: number]
+    select: [systemId: number] // ESS 시스템 선택 이벤트
 }>()
 
+// formatNumber 숫자 천단위 포맷팅
 const formatNumber = (value?: number) => {
     return Number(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 1 })
 }
 
+// formatPower 전력 단위(kW) 포맷팅
 const formatPower = (value?: number) => {
     return `${formatNumber(value)} kW`
 }
 
+// statusLabel 상태 코드 한국어 라벨 반환
 const statusLabel = (status?: string) => {
     if (status === 'NORMAL') {
         return '정상'
@@ -76,6 +79,7 @@ const statusLabel = (status?: string) => {
     return status || '-'
 }
 
+// statusClass 상태 코드에 따른 CSS 클래스 반환
 const statusClass = (status?: string) => {
     return {
         'is-normal': status === 'NORMAL',

@@ -77,11 +77,12 @@ import { GlassPanel } from '@/components'
 import type { PvStringItem } from '../service/deviceManagement.types'
 
 const props = defineProps<{
-    pvString: PvStringItem | null
+    pvString: PvStringItem | null // 선택된 PV 스트링 상세 정보
 }>()
 
 const connectionText = computed(() => (props.pvString?.inverter_name ? '인버터 연결' : '미연결'))
 
+// statusLabel 스트링 운영 상태 코드 한국어 라벨 반환
 const statusLabel = (value: string) => {
     const labels: Record<string, string> = {
         NORMAL: '정상',
@@ -93,6 +94,7 @@ const statusLabel = (value: string) => {
     return labels[value] || value || '-'
 }
 
+// numberText 수치 및 단위 문자열 포맷팅
 const numberText = (value: number | null, unit: string) => {
     if (value === null || value === undefined) {
         return '-'

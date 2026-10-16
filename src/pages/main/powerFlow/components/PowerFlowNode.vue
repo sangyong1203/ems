@@ -16,12 +16,12 @@ import AppIcon from '@/components/widget/AppIcon.vue'
 import type { AppIconName } from '@/constants/appIcons'
 
 defineProps<{
-    variant: 'solar' | 'load' | 'grid'
-    title: string
-    value: string
-    unit: string
-    status: string
-    icon: AppIconName
+    variant: 'solar' | 'load' | 'grid' // 노드 유형 (태양광, 부하, 계통)
+    title: string // 노드 제목
+    value: string // 전력 수치 텍스트
+    unit: string // 전력 단위
+    status: string // 운영 상태 텍스트
+    icon: AppIconName // 표시 아이콘 명칭
 }>()
 </script>
 

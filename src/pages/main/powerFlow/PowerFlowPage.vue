@@ -108,18 +108,20 @@ import { isSuccessResponse } from '@/utils'
 import powerFlowApi from './service/powerFlow.api'
 import type { PowerFlowData } from './service/powerFlow.types'
 
-const DEFAULT_REFRESH_INTERVAL = 10000
+const DEFAULT_REFRESH_INTERVAL = 10000 // 기본 폴링 주기(ms)
 
-const powerFlow = ref<PowerFlowData | null>(null)
-const editorData = ref<PowerFlowEditorData | null>(null)
-const draftLayout = ref<PowerFlowLayout | null>(null)
-const isEditMode = ref(false)
-let pollingTimer: number | undefined
+const powerFlow = ref<PowerFlowData | null>(null) // 전력 조류 실시간 데이터
+const editorData = ref<PowerFlowEditorData | null>(null) // 다이어그램 레이아웃 편집기 데이터
+const draftLayout = ref<PowerFlowLayout | null>(null) // 편집 중인 임시 레이아웃
+const isEditMode = ref(false) // 다이어그램 편집 모드 여부
+let pollingTimer: number | undefined // 주기적 데이터 갱신 타이머
 
+// formatNumber 숫자 천단위 포맷팅
 const formatNumber = (value?: number) => {
     return Number(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 1 })
 }
 
+// cloneLayout 레이아웃 객체 깊은 복사
 const cloneLayout = (layout: PowerFlowLayout): PowerFlowLayout => JSON.parse(JSON.stringify(layout))
 
 const essPower = computed(() => {
@@ -237,6 +239,7 @@ const flowItems = computed(() => [
     { label: 'ESS → 계통', value: `${formatNumber(powerFlow.value?.flows.essToGridKw)} kW` },
 ])
 
+// statusLabel 상태 코드 한국어 라벨 반환
 const statusLabel = (status?: string) => {
     if (status === 'GENERATING') {
         return '발전 중'
@@ -265,6 +268,7 @@ const statusLabel = (status?: string) => {
     return status || '-'
 }
 
+// getPowerFlow 실시간 전력 조류 데이터 조회
 const getPowerFlow = async () => {
     const res = await powerFlowApi.getPowerFlow()
     if (isSuccessResponse(res.result)) {
@@ -272,6 +276,7 @@ const getPowerFlow = async () => {
     }
 }
 
+// getEditor 다이어그램 레이아웃 데이터 조회
 const getEditor = async (syncDraftLayout = true) => {
     const res = await powerFlowApi.getEditor()
     if (isSuccessResponse(res.result)) {
@@ -282,10 +287,12 @@ const getEditor = async (syncDraftLayout = true) => {
     }
 }
 
+// handleDraftLayoutChange 캔버스 편집 내용 임시 레이아웃 반영
 const handleDraftLayoutChange = (layout: PowerFlowLayout) => {
     draftLayout.value = cloneLayout(layout)
 }
 
+// startEdit 다이어그램 레이아웃 편집 시작
 const startEdit = () => {
     if (!editorData.value) {
         return
@@ -294,6 +301,7 @@ const startEdit = () => {
     isEditMode.value = true
 }
 
+// cancelEdit 다이어그램 레이아웃 편집 취소 및 복원
 const cancelEdit = () => {
     if (!editorData.value) {
         return
@@ -302,6 +310,7 @@ const cancelEdit = () => {
     isEditMode.value = false
 }
 
+// saveEdit 편집된 다이어그램 레이아웃 저장
 const saveEdit = async () => {
     if (!draftLayout.value) {
         return
@@ -321,6 +330,7 @@ const saveEdit = async () => {
     }
 }
 
+// startPolling 주기적 전력 조류 데이터 갱신 시작
 const startPolling = (interval: number) => {
     pollingTimer = window.setInterval(() => {
         getPowerFlow()
@@ -328,11 +338,13 @@ const startPolling = (interval: number) => {
     }, interval)
 }
 
+// onMounted 초기 데이터 로드 및 폴링 시작
 onMounted(async () => {
     await Promise.all([getPowerFlow(), getEditor()])
     startPolling(powerFlow.value?.refreshInterval ?? DEFAULT_REFRESH_INTERVAL)
 })
 
+// onBeforeUnmount 컴포넌트 해제 시 폴링 타이머 정리
 onBeforeUnmount(() => {
     if (pollingTimer) {
         window.clearInterval(pollingTimer)

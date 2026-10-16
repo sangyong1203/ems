@@ -91,11 +91,11 @@ import type { TemplateType } from '../service/notificationManagement.types'
 const route = useRoute()
 const router = useRouter()
 
-const templateFormRef = ref<FormInstance | null>(null)
-const fileInput = ref<HTMLInputElement | null>(null)
-const selectedLocalFiles = ref<File[]>([])
-const availableTypes = ref<TemplateType[]>([])
-const isSaving = ref(false)
+const templateFormRef = ref<FormInstance | null>(null) // 엘리먼트 폼 인스턴스
+const fileInput = ref<HTMLInputElement | null>(null) // 파일 입력 엘리먼트
+const selectedLocalFiles = ref<File[]>([]) // 선택된 이미지 파일 목록
+const availableTypes = ref<TemplateType[]>([]) // 등록 가능한 템플릿 유형 목록
+const isSaving = ref(false) // 저장 중 상태
 
 const templateId = computed(() => {
     const id = Number(route.query.id ?? route.params.id)
@@ -103,25 +103,29 @@ const templateId = computed(() => {
 })
 const isEditMode = computed(() => Boolean(templateId.value))
 
-const templateForm = reactive({
+const templateForm = reactive({ // 템플릿 입력 폼 데이터
     typeId: null as number | null,
     title: '',
     body: '',
 })
 
+// openFileDialog 로컬 이미지 파일 선택 창 열기
 const openFileDialog = () => {
     fileInput.value?.click()
 }
 
+// handleFileChange 파일 선택 이벤트 처리
 const handleFileChange = (event: Event) => {
     const target = event.target as HTMLInputElement
     selectedLocalFiles.value = Array.from(target.files ?? [])
 }
 
+// removeLocalFile 선택된 로컬 파일 목록에서 제거
 const removeLocalFile = (index: number) => {
     selectedLocalFiles.value.splice(index, 1)
 }
 
+// loadTypes 사용 가능한 템플릿 유형 목록 조회
 const loadTypes = async () => {
     const [typesRes, templatesRes] = await Promise.all([
         notificationManagementApi.getTemplateTypes(),
@@ -149,6 +153,7 @@ const loadTypes = async () => {
     availableTypes.value = typesRes.data.filter(type => !usedTypes.includes(type.type))
 }
 
+// loadTemplate 수정 모드 시 기존 템플릿 상세 정보 조회
 const loadTemplate = async () => {
     if (!templateId.value) return
     const res = await notificationManagementApi.getTemplate(templateId.value)
@@ -167,6 +172,7 @@ const loadTemplate = async () => {
     templateForm.body = template.body ?? ''
 }
 
+// saveTemplate 템플릿 등록 또는 수정 저장
 const saveTemplate = async () => {
     if (!templateForm.typeId || !templateForm.title.trim() || !templateForm.body.trim()) {
         Notification.warning('Please fill in required fields.')
@@ -200,10 +206,12 @@ const saveTemplate = async () => {
     }
 }
 
+// goBack 템플릿 목록 페이지로 이동
 const goBack = () => {
     router.push('/notificationManagement')
 }
 
+// onMounted 템플릿 유형 및 수정 대상 데이터 로드
 onMounted(async () => {
     await loadTypes()
     await loadTemplate()

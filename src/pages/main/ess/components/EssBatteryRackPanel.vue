@@ -66,7 +66,7 @@ import { GlassPanel, StatusBadge } from '@/components'
 import type { EssBatteryRack } from '../service/ess.types'
 
 const props = defineProps<{
-    racks: EssBatteryRack[]
+    racks: EssBatteryRack[] // 배터리 랙 계측 데이터 목록
 }>()
 
 const rackCapacityKwh = computed(() => props.racks[0]?.capacityKwh ?? 0)
@@ -78,15 +78,18 @@ const statusCounts = computed(() => ({
     inactive: props.racks.filter(rack => rack.status === 'INACTIVE').length,
 }))
 
+// formatNumber 숫자 천단위 포맷팅
 const formatNumber = (value?: number) => {
     return Number(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 1 })
 }
 
+// formatSignedNumber 부호가 포함된 숫자 포맷팅
 const formatSignedNumber = (value?: number) => {
     const numberValue = Number(value ?? 0)
     return `${numberValue > 0 ? '+' : ''}${formatNumber(numberValue)}`
 }
 
+// statusLabel 상태 코드에 대응하는 한국어 라벨 반환
 const statusLabel = (status?: string) => {
     const labels: Record<string, string> = {
         NORMAL: '정상',
@@ -97,6 +100,7 @@ const statusLabel = (status?: string) => {
     return labels[status ?? ''] ?? status ?? '-'
 }
 
+// statusVariant 상태 코드에 대응하는 배지 변형 반환
 const statusVariant = (status?: string): 'success' | 'warning' | 'danger' | 'muted' => {
     if (status === 'NORMAL') {
         return 'success'

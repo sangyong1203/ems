@@ -121,25 +121,27 @@ import DashboardKpiSummary from './components/DashboardKpiSummary.vue'
 import dashboardApi from './service/dashboard.api'
 import type { DashboardPowerFlow, DashboardSummary, DashboardTelemetryPoint } from './service/dashboard.types'
 
-const DEFAULT_REFRESH_INTERVAL = 10000
+const DEFAULT_REFRESH_INTERVAL = 10000 // 기본 데이터 갱신 주기 (10초)
 const dashboardPalettePlacedDeviceIds: number[] = []
 
-const summary = ref<DashboardSummary | null>(null)
-const powerFlow = ref<DashboardPowerFlow | null>(null)
-const powerFlowEditorData = ref<PowerFlowEditorData | null>(null)
-const powerFlowLayout = ref<PowerFlowLayout | null>(null)
-const solarHistory = ref<DashboardTelemetryPoint[]>([])
-const essChargeHistory = ref<DashboardTelemetryPoint[]>([])
-const essDischargeHistory = ref<DashboardTelemetryPoint[]>([])
-const essSocHistory = ref<DashboardTelemetryPoint[]>([])
-const gridExportHistory = ref<DashboardTelemetryPoint[]>([])
-const gridImportHistory = ref<DashboardTelemetryPoint[]>([])
-let pollingTimer: number | undefined
+const summary = ref<DashboardSummary | null>(null) // 대시보드 요약 지표
+const powerFlow = ref<DashboardPowerFlow | null>(null) // 실시간 전력 흐름 데이터
+const powerFlowEditorData = ref<PowerFlowEditorData | null>(null) // 전력 흐름 편집 데이터
+const powerFlowLayout = ref<PowerFlowLayout | null>(null) // 전력 흐름 캔버스 레이아웃
+const solarHistory = ref<DashboardTelemetryPoint[]>([]) // 시간대별 태양광 발전 출력 이력
+const essChargeHistory = ref<DashboardTelemetryPoint[]>([]) // 시간대별 ESS 충전 전력 이력
+const essDischargeHistory = ref<DashboardTelemetryPoint[]>([]) // 시간대별 ESS 방전 전력 이력
+const essSocHistory = ref<DashboardTelemetryPoint[]>([]) // 시간대별 ESS SOC 이력
+const gridExportHistory = ref<DashboardTelemetryPoint[]>([]) // 시간대별 계통 송전 전력 이력
+const gridImportHistory = ref<DashboardTelemetryPoint[]>([]) // 시간대별 계통 수전 전력 이력
+let pollingTimer: number | undefined // 데이터 주기 갱신 타이머 ID
 
+// 숫자를 소수점 1자리 로케일 형식으로 변환합니다.
 const formatNumber = (value?: number) => {
     return Number(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 1 })
 }
 
+// 충방전 전력 상태에 따라 ESS 운전 모드(충전/방전/대기) 라벨을 반환합니다.
 const essModeLabel = computed(() => {
     if (!summary.value) {
         return '대기'
@@ -153,6 +155,7 @@ const essModeLabel = computed(() => {
     return '대기'
 })
 
+// PCS 및 BMS 상태 코드를 종합하여 ESS 상태 라벨과 톤을 반환합니다.
 const essStatus = computed<{ label: string; tone: 'normal' | 'warning' | 'fault' | 'unknown' }>(() => {
     const statuses = [summary.value?.ess.pcsStatus, summary.value?.ess.bmsStatus].filter(Boolean)
     if (!statuses.length) {
@@ -170,6 +173,7 @@ const essStatus = computed<{ label: string; tone: 'normal' | 'warning' | 'fault'
     return { label: '확인 필요', tone: 'unknown' }
 })
 
+// 계통 송전/수전 상태 및 전력량을 텍스트로 반환합니다.
 const gridPowerText = computed(() => {
     if (!summary.value) {
         return '0 kW'
@@ -257,6 +261,7 @@ const essStatusItems = computed(() => [
     { label: '배터리 온도', value: `${formatNumber(summary.value?.ess.batteryTemperatureC)}°C` },
 ])
 
+// 대시보드 요약, 전력 흐름, 시계열 추이 데이터를 일괄 조회합니다.
 const getDashboardData = async () => {
     const [
         summaryRes,
@@ -318,17 +323,20 @@ const getDashboardData = async () => {
     }
 }
 
+// 지정된 주기로 대시보드 데이터를 자동 갱신하는 폴링 타이머를 시작합니다.
 const startPolling = (interval: number) => {
     pollingTimer = window.setInterval(() => {
         getDashboardData()
     }, interval)
 }
 
+// 화면 마운트 시 초기 데이터를 조회하고 실시간 폴링을 등록합니다.
 onMounted(async () => {
     await getDashboardData()
     startPolling(summary.value?.refreshInterval ?? DEFAULT_REFRESH_INTERVAL)
 })
 
+// 컴포넌트 해제 시 실행 중인 폴링 타이머를 해제합니다.
 onBeforeUnmount(() => {
     if (pollingTimer) {
         window.clearInterval(pollingTimer)

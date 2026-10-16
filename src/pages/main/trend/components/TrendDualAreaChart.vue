@@ -9,16 +9,16 @@ import { COLOR_TYPE, CHART_THEME } from '@/constants/colors'
 import type { TrendTelemetryPoint } from '../service/trend.types'
 
 const props = defineProps<{
-    firstName: string
-    secondName: string
-    firstData: TrendTelemetryPoint[]
-    secondData: TrendTelemetryPoint[]
-    unit: string
+    firstName: string // 첫 번째 시리즈 명칭
+    secondName: string // 두 번째 시리즈 명칭
+    firstData: TrendTelemetryPoint[] // 첫 번째 시계열 데이터
+    secondData: TrendTelemetryPoint[] // 두 번째 시계열 데이터
+    unit: string // 표시 단위
 }>()
 
-const chartRef = ref<HTMLDivElement | null>(null)
-let chart: echarts.ECharts | null = null
-let resizeObserver: ResizeObserver | null = null
+const chartRef = ref<HTMLDivElement | null>(null) // 차트 DOM 엘리먼트
+let chart: echarts.ECharts | null = null // ECharts 인스턴스
+let resizeObserver: ResizeObserver | null = null // 화면 크기 변경 감지 옵저버
 
 const categories = computed(() => {
     const measuredAtSet = new Set<string>()
@@ -27,11 +27,13 @@ const categories = computed(() => {
     return Array.from(measuredAtSet).sort()
 })
 
+// valuesByTime 시간대별 데이터 배열 매핑
 const valuesByTime = (data: TrendTelemetryPoint[]) => {
     const valueMap = new Map(data.map(item => [item.measured_at, item.metric_value]))
     return categories.value.map(measuredAt => valueMap.get(measuredAt) ?? 0)
 }
 
+// drawChart 이중 영역 라인 차트 렌더링
 const drawChart = () => {
     if (!chart) {
         return
@@ -126,6 +128,7 @@ const drawChart = () => {
     })
 }
 
+// watch(props) 데이터 변경 시 차트 재렌더링
 watch(
     () => [props.firstData, props.secondData],
     () => {
@@ -134,6 +137,7 @@ watch(
     { deep: true },
 )
 
+// onMounted 차트 초기화 및 리사이즈 옵저버 등록
 onMounted(() => {
     if (!chartRef.value) {
         return
@@ -147,6 +151,7 @@ onMounted(() => {
     drawChart()
 })
 
+// onBeforeUnmount 차트 인스턴스 및 옵저버 해제
 onBeforeUnmount(() => {
     resizeObserver?.disconnect()
     chart?.dispose()

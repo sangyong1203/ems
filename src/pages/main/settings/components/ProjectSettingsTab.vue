@@ -33,12 +33,13 @@ import { toRefs } from 'vue'
 import type { ProjectConfigSavePayload } from '../service/settings.types'
 
 const props = defineProps<{
-    form: ProjectConfigSavePayload
-    saving: boolean
+    form: ProjectConfigSavePayload // 프로젝트 설정 폼 데이터
+    saving: boolean // 저장 중 로딩 여부
 }>()
 const { form, saving } = toRefs(props)
+
 defineEmits<{
-    save: []
+    save: [] // 저장 버튼 클릭 이벤트
 }>()
 </script>
 

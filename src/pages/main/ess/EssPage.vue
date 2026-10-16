@@ -79,13 +79,13 @@ import EssRackTemperatureChart from './components/EssRackTemperatureChart.vue'
 import essApi from './service/ess.api'
 import type { EssOverview, EssSystemItem, EssSystemSummary } from './service/ess.types'
 
-const DEFAULT_REFRESH_INTERVAL = 10000
+const DEFAULT_REFRESH_INTERVAL = 10000 // 기본 폴링 주기(ms)
 
-const overview = ref<EssOverview | null>(null)
-const systems = ref<EssSystemItem[]>([])
-const systemsSummary = ref<EssSystemSummary | null>(null)
-const selectedSystemId = ref<number | null>(null)
-let pollingTimer: number | undefined
+const overview = ref<EssOverview | null>(null) // 선택된 ESS 상세/계측 데이터
+const systems = ref<EssSystemItem[]>([]) // ESS 장치 목록
+const systemsSummary = ref<EssSystemSummary | null>(null) // 전체 ESS 현황 요약
+const selectedSystemId = ref<number | null>(null) // 현재 선택된 ESS ID
+let pollingTimer: number | undefined // 주기적 데이터 갱신 타이머
 
 const formatNumber = (value?: number) => {
     return Number(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 1 })
@@ -143,6 +143,7 @@ const kpiItems = computed(() => [
     },
 ])
 
+// getSystems ESS 장치 목록 및 요약 조회
 const getSystems = async () => {
     const res = await essApi.getSystems()
     if (!isSuccessResponse(res.result)) {
@@ -158,6 +159,7 @@ const getSystems = async () => {
     }
 }
 
+// getEssData 선택된 ESS의 상세 현황 및 계측 데이터 조회
 const getEssData = async () => {
     if (!selectedSystemId.value) {
         return
@@ -169,27 +171,32 @@ const getEssData = async () => {
     }
 }
 
+// refreshData 목록 및 상세 데이터 일괄 갱신
 const refreshData = async () => {
     await getSystems()
     await getEssData()
 }
 
+// selectSystem ESS 장치 선택 변경 및 상세 조회
 const selectSystem = async (systemId: number) => {
     selectedSystemId.value = systemId
     await getEssData()
 }
 
+// startPolling 주기적 자동 갱신 시작
 const startPolling = (interval: number) => {
     pollingTimer = window.setInterval(() => {
         refreshData()
     }, interval)
 }
 
+// onMounted 초기 데이터 로드 및 폴링 시작
 onMounted(async () => {
     await refreshData()
     startPolling(overview.value?.refreshInterval ?? DEFAULT_REFRESH_INTERVAL)
 })
 
+// onBeforeUnmount 컴포넌트 해제 시 폴링 타이머 정리
 onBeforeUnmount(() => {
     if (pollingTimer) {
         window.clearInterval(pollingTimer)

@@ -30,6 +30,7 @@ import { DropdownList } from '@/components'
 import type { ProjectConfigSavePayload } from '../service/settings.types'
 import { toRefs } from 'vue'
 
+// 갱신 주기 키 타입
 type RefreshIntervalKey =
     | 'dashboard_refresh_interval'
     | 'solar_refresh_interval'
@@ -38,16 +39,16 @@ type RefreshIntervalKey =
     | 'trend_refresh_interval'
 
 const props = defineProps<{
-    form: ProjectConfigSavePayload
-    saving: boolean
+    form: ProjectConfigSavePayload // 프로젝트 설정 폼 데이터
+    saving: boolean // 저장 중 로딩 여부
 }>()
 const { form, saving } = toRefs(props)
 
 defineEmits<{
-    save: []
+    save: [] // 저장 버튼 클릭 이벤트
 }>()
 
-const refreshIntervalOptions = [
+const refreshIntervalOptions = [ // 갱신 주기 선택 옵션
     { label: '3초', value: 3000 },
     { label: '5초', value: 5000 },
     { label: '10초', value: 10000 },
@@ -57,7 +58,7 @@ const refreshIntervalOptions = [
     { label: '10분', value: 600000 },
 ]
 
-const monitoringSettings: Array<{ key: RefreshIntervalKey; label: string }> = [
+const monitoringSettings: Array<{ key: RefreshIntervalKey; label: string }> = [ // 화면별 갱신 주기 항목 목록
     { key: 'dashboard_refresh_interval', label: '대시보드 갱신 주기' },
     { key: 'solar_refresh_interval', label: '태양광 갱신 주기' },
     { key: 'ess_refresh_interval', label: 'ESS 갱신 주기' },

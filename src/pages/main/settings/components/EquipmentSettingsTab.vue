@@ -31,9 +31,9 @@ import { computed } from 'vue'
 import type { DeviceCounts, EquipmentCapacities } from '../service/settings.types'
 
 const props = defineProps<{
-    deviceCounts: DeviceCounts
-    activeDeviceCounts: DeviceCounts
-    capacitySummary: EquipmentCapacities
+    deviceCounts: DeviceCounts // 전체 등록 장비 수량
+    activeDeviceCounts: DeviceCounts // 활성 운영 장비 수량
+    capacitySummary: EquipmentCapacities // 설비 용량 요약
 }>()
 
 const counts = computed(() => [
@@ -68,6 +68,7 @@ const capacities = computed(() => [
     { key: 'essOperating', label: 'ESS 운영 가능 용량', value: props.capacitySummary.essOperatingKwh, unit: 'kWh' },
 ])
 
+// formatNumber 숫자 천단위 포맷팅
 const formatNumber = (value: number) => Number(value).toLocaleString(undefined, { maximumFractionDigits: 1 })
 </script>
 

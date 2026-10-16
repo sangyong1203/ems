@@ -10,11 +10,11 @@ import type { DashboardTelemetryPoint } from '../service/dashboard.types'
 
 const props = withDefaults(
     defineProps<{
-        firstPoints: DashboardTelemetryPoint[]
-        secondPoints: DashboardTelemetryPoint[]
-        firstName?: string
-        secondName?: string
-        unit: string
+        firstPoints: DashboardTelemetryPoint[] // 1차 계열 시계열 데이터 (송전/충전)
+        secondPoints: DashboardTelemetryPoint[] // 2차 계열 시계열 데이터 (수전/방전)
+        firstName?: string // 1차 계열 범례명
+        secondName?: string // 2차 계열 범례명
+        unit: string // 표시 단위 (예: kW)
     }>(),
     {
         firstName: '충전',
@@ -22,10 +22,11 @@ const props = withDefaults(
     },
 )
 
-const chartRef = ref<HTMLDivElement | null>(null)
+const chartRef = ref<HTMLDivElement | null>(null) // 차트 컨테이너 DOM 요소
 let chart: echarts.ECharts | null = null
 let resizeObserver: ResizeObserver | null = null
 
+// 두 시계열 데이터의 측정 시각을 결합하여 정렬된 X축 타임라인을 생성합니다.
 const categories = computed(() => {
     const measuredAtSet = new Set<string>()
     props.firstPoints.forEach(item => measuredAtSet.add(item.measured_at))
@@ -33,11 +34,13 @@ const categories = computed(() => {
     return Array.from(measuredAtSet).sort()
 })
 
+// X축 타임라인에 맞추어 시계열 측정값을 배열로 매핑합니다.
 const valuesByTime = (points: DashboardTelemetryPoint[]) => {
     const values = new Map(points.map(item => [item.measured_at, item.metric_value]))
     return categories.value.map(measuredAt => values.get(measuredAt) ?? 0)
 }
 
+// ECharts 옵션을 구성하고 이중 영역 라인 차트를 렌더링합니다.
 const drawChart = () => {
     if (!chart) {
         return
@@ -131,6 +134,7 @@ const drawChart = () => {
     })
 }
 
+// 데이터 변경 시 차트를 다시 그립니다.
 watch(
     () => [props.firstPoints, props.secondPoints, props.firstName, props.secondName],
     () => {
@@ -139,6 +143,7 @@ watch(
     { deep: true },
 )
 
+// 차트 인스턴스를 초기화하고 반응형 리사이즈 감시자를 등록합니다.
 onMounted(() => {
     if (!chartRef.value) {
         return
@@ -152,6 +157,7 @@ onMounted(() => {
     drawChart()
 })
 
+// 컴포넌트 해제 시 리사이즈 옵저버와 차트 인스턴스를 정리합니다.
 onBeforeUnmount(() => {
     resizeObserver?.disconnect()
     chart?.dispose()

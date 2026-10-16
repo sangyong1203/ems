@@ -9,14 +9,14 @@ import { COLOR_TYPE, CHART_THEME } from '@/constants/colors'
 import type { EssRackTemperatureHistory } from '../service/ess.types'
 
 const props = defineProps<{
-    series: EssRackTemperatureHistory[]
-    warningTemperature?: number
-    faultTemperature?: number
+    series: EssRackTemperatureHistory[] // 랙별 온도 시계열 데이터
+    warningTemperature?: number // 주의 기준 온도 (°C)
+    faultTemperature?: number // 장애 기준 온도 (°C)
 }>()
 
-const chartRef = ref<HTMLDivElement | null>(null)
-let chart: echarts.ECharts | null = null
-let resizeObserver: ResizeObserver | null = null
+const chartRef = ref<HTMLDivElement | null>(null) // 차트 DOM 엘리먼트
+let chart: echarts.ECharts | null = null // ECharts 인스턴스
+let resizeObserver: ResizeObserver | null = null // 화면 크기 변경 감지 옵저버
 
 type ChartLabelParam = {
     name?: string
@@ -93,10 +93,12 @@ const temperatureLimitLines = computed(() => {
     ]
 })
 
+// formatTime 시간 문자열(HH:mm) 포맷팅
 const formatTime = (value: string) => {
     return value.slice(11, 16)
 }
 
+// drawChart 랙별 온도 라인 차트 렌더링
 const drawChart = () => {
     if (!chart) {
         return
@@ -208,6 +210,7 @@ const drawChart = () => {
     })
 }
 
+// watch(props.series) 데이터 변경 시 차트 재렌더링
 watch(
     () => props.series,
     () => {
@@ -216,6 +219,7 @@ watch(
     { deep: true },
 )
 
+// onMounted 차트 초기화 및 리사이즈 옵저버 등록
 onMounted(() => {
     if (!chartRef.value) {
         return
@@ -229,6 +233,7 @@ onMounted(() => {
     drawChart()
 })
 
+// onBeforeUnmount 차트 인스턴스 및 옵저버 해제
 onBeforeUnmount(() => {
     resizeObserver?.disconnect()
     chart?.dispose()

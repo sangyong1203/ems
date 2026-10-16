@@ -10,7 +10,7 @@ import ReportEChart from './ReportEChart.vue'
 import { CHART_THEME, SEMANTIC_COLORS } from '@/constants/colors'
 
 const props = defineProps<{
-    data: ReportStatisticsPoint[]
+    data: ReportStatisticsPoint[] // 일별 보고서 통계 데이터
 }>()
 
 const chartTextColor = CHART_THEME.textColor
@@ -18,6 +18,8 @@ const chartSplitLineColor = CHART_THEME.gridLineColor
 const chartAxisLineColor = CHART_THEME.axisLineColor
 const chartGrid = { top: 36, right: 32, bottom: 30, left: 56 }
 const dates = computed(() => props.data.map(item => item.date))
+
+// formatDateLabel 날짜 라벨(MM-DD) 포맷팅
 const formatDateLabel = (date: string) => date.slice(5)
 
 const chartOption = computed<EChartsOption>(() => ({

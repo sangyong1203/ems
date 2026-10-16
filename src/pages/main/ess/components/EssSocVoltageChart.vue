@@ -9,15 +9,15 @@ import { COLOR_TYPE, CHART_THEME } from '@/constants/colors'
 import type { EssTelemetryPoint } from '../service/ess.types'
 
 const props = defineProps<{
-    socData: EssTelemetryPoint[]
-    voltageData: EssTelemetryPoint[]
-    voltageMin?: number
-    voltageMax?: number
+    socData: EssTelemetryPoint[] // SOC 시계열 데이터
+    voltageData: EssTelemetryPoint[] // 전압 시계열 데이터
+    voltageMin?: number // 전압 하한치 (V)
+    voltageMax?: number // 전압 상한치 (V)
 }>()
 
-const chartRef = ref<HTMLDivElement | null>(null)
-let chart: echarts.ECharts | null = null
-let resizeObserver: ResizeObserver | null = null
+const chartRef = ref<HTMLDivElement | null>(null) // 차트 DOM 엘리먼트
+let chart: echarts.ECharts | null = null // ECharts 인스턴스
+let resizeObserver: ResizeObserver | null = null // 화면 크기 변경 감지 옵저버
 
 type ChartTooltipParam = {
     axisValueLabel?: string
@@ -91,10 +91,12 @@ const voltageLimitLines = computed(() => {
     ]
 })
 
+// formatTime 시간 문자열(HH:mm) 포맷팅
 const formatTime = (value: string) => {
     return value.slice(11, 16)
 }
 
+// drawChart 전압 및 SOC 이중 축 라인 차트 렌더링
 const drawChart = () => {
     if (!chart) {
         return
@@ -250,6 +252,7 @@ const drawChart = () => {
     })
 }
 
+// watch(props) 데이터 변경 시 차트 재렌더링
 watch(
     () => [props.socData, props.voltageData],
     () => {
@@ -258,6 +261,7 @@ watch(
     { deep: true },
 )
 
+// onMounted 차트 초기화 및 리사이즈 옵저버 등록
 onMounted(() => {
     if (!chartRef.value) {
         return
@@ -271,6 +275,7 @@ onMounted(() => {
     drawChart()
 })
 
+// onBeforeUnmount 차트 인스턴스 및 옵저버 해제
 onBeforeUnmount(() => {
     resizeObserver?.disconnect()
     chart?.dispose()

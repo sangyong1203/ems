@@ -150,15 +150,16 @@ import type { DatePickerChangeSource } from '@/components/widget/DatePicker.vue'
 import type { ReportStatistics, ReportSummary } from './service/operationReport.types'
 import dayjs from 'dayjs'
 
-const summary = ref<ReportSummary | null>(null)
-const statistics = ref<ReportStatistics | null>(null)
-const reportMode = ref<'DAILY' | 'RANGE'>('RANGE')
-const selectedDate = ref('')
-const selectedRange = ref<[string, string] | null>([
+const summary = ref<ReportSummary | null>(null) // 운영 보고서 기간 누적 요약 데이터
+const statistics = ref<ReportStatistics | null>(null) // 운영 보고서 통계 및 차트 시계열 데이터
+const reportMode = ref<'DAILY' | 'RANGE'>('RANGE') // 보고서 조회 모드 (일간/기간)
+const selectedDate = ref('') // 일간 모드 선택 날짜
+const selectedRange = ref<[string, string] | null>([ // 기간 모드 선택 날짜 범위
     dayjs().subtract(7, 'day').format('YYYY-MM-DD'),
     dayjs().format('YYYY-MM-DD'),
 ])
 
+// formatNumber 숫자 천단위 포맷팅
 const formatNumber = (value?: number) => Number(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 1 })
 
 const reportRangeLabel = computed(() => {
@@ -275,6 +276,7 @@ const operationItems = computed(() => [
     { label: '운영 판정', value: operationStatusLabel.value },
 ])
 
+// normalizeReportDate 조회 모드 변경 시 날짜 형식 동기화
 const normalizeReportDate = () => {
     if (reportMode.value === 'DAILY') {
         selectedDate.value = selectedRange.value?.[1] || summary.value?.date_to || summary.value?.date_from || ''
@@ -285,6 +287,7 @@ const normalizeReportDate = () => {
     }
 }
 
+// changeReportDate 조회 기간 변경 이벤트 처리 및 통계 재조회
 const changeReportDate = (source: DatePickerChangeSource) => {
     if (source === 'mode') {
         normalizeReportDate()
@@ -292,6 +295,7 @@ const changeReportDate = (source: DatePickerChangeSource) => {
     getReportStatistics()
 }
 
+// getReportStatistics 지정 기간 운영 보고서 통계 및 요약 조회
 const getReportStatistics = async () => {
     const dateFrom = reportMode.value === 'DAILY' ? selectedDate.value : selectedRange.value?.[0] || ''
     const dateTo = reportMode.value === 'DAILY' ? selectedDate.value : selectedRange.value?.[1] || ''
@@ -306,6 +310,7 @@ const getReportStatistics = async () => {
     }
 }
 
+// onMounted 초기 보고서 통계 조회
 onMounted(() => {
     getReportStatistics()
 })

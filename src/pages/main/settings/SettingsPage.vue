@@ -43,9 +43,9 @@ import type {
     ProjectConfigSavePayload,
 } from './service/settings.types'
 
-const activeTab = ref('project')
-const saving = ref(false)
-const deviceCounts = ref<DeviceCounts>({
+const activeTab = ref('project') // 활성 탭 (project / equipment / monitoring / simulator)
+const saving = ref(false) // 저장 처리 중 상태
+const deviceCounts = ref<DeviceCounts>({ // 전체 설비 종류별 수량
     INVERTER: 0,
     PCS: 0,
     ESS_BATTERY: 0,
@@ -54,7 +54,7 @@ const deviceCounts = ref<DeviceCounts>({
     AC_PANEL: 0,
     METER: 0,
 })
-const activeDeviceCounts = ref<DeviceCounts>({
+const activeDeviceCounts = ref<DeviceCounts>({ // 활성 운영 중인 설비 종류별 수량
     INVERTER: 0,
     PCS: 0,
     ESS_BATTERY: 0,
@@ -63,13 +63,13 @@ const activeDeviceCounts = ref<DeviceCounts>({
     AC_PANEL: 0,
     METER: 0,
 })
-const capacitySummary = ref<EquipmentCapacities>({
+const capacitySummary = ref<EquipmentCapacities>({ // 설비 용량 집계 (설치/운영 용량)
     solarInstalledKw: 0,
     solarOperatingKw: 0,
     essInstalledKwh: 0,
     essOperatingKwh: 0,
 })
-const form = reactive<ProjectConfigSavePayload>({
+const form = reactive<ProjectConfigSavePayload>({ // 프로젝트 및 모니터링 설정 폼 데이터
     project_name: '',
     site_name: '',
     location: null,
@@ -88,6 +88,7 @@ const form = reactive<ProjectConfigSavePayload>({
     trend_refresh_interval: 10000,
 })
 
+// syncProject 조회된 프로젝트 설정 데이터 폼 및 상태 동기화
 const syncProject = (data: ProjectConfig) => {
     const { device_counts, active_device_counts, equipment_capacities, id: _id, ...project } = data
     Object.assign(form, project)
@@ -96,6 +97,7 @@ const syncProject = (data: ProjectConfig) => {
     capacitySummary.value = equipment_capacities
 }
 
+// getProject 프로젝트 기본 설정 및 설비 집계 조회
 const getProject = async () => {
     const res = await settingsApi.getProject()
     if (isSuccessResponse(res.result)) {
@@ -103,6 +105,7 @@ const getProject = async () => {
     }
 }
 
+// saveProject 프로젝트 및 모니터링 설정 저장
 const saveProject = async () => {
     saving.value = true
     try {
@@ -116,6 +119,7 @@ const saveProject = async () => {
     }
 }
 
+// onMounted 초기 프로젝트 설정 데이터 로드
 onMounted(() => {
     getProject()
 })

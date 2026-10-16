@@ -25,13 +25,14 @@ import { ref } from 'vue'
 import { getAuthImage } from '@/services/file.service'
 
 
+// decodeHTMLEntities HTML 엔티티 문자열 디코딩
 function decodeHTMLEntities(html: string): string {
     const txt = document.createElement('textarea')
     txt.innerHTML = html
     return txt.value
 }
 
-
+// applyPreviewContext 템플릿 변수 치환 적용
 function applyPreviewContext(str: string, context: Record<string, string>): string {
     Object.entries(context).forEach(([key, value]) => {
         const reg = new RegExp(`{{\\s*${key}\\s*}}`, 'g')
@@ -40,8 +41,8 @@ function applyPreviewContext(str: string, context: Record<string, string>): stri
     return str
 }
 
-const isShowDialog = ref(false)
-const previewData = ref({
+const isShowDialog = ref(false) // 미리보기 모달 표시 여부
+const previewData = ref({ // 미리보기 렌더링 데이터
     type: '',
     title: '',
     body: '',
@@ -49,22 +50,16 @@ const previewData = ref({
     inUse: true,
 })
 
-
 const dummyContext = {
     user_name: 'User Name',
     user_id: 'hongildong',
     user_email: 'hongildong@example.com',
 }
 
+// openDialog 템플릿 본문 및 이미지 치환 후 미리보기 모달 열기
 const openDialog = async (templateData: any, imageSubs: any[]) => {
-    console.log('Raw templateData.body:', templateData.body)
-    console.log('Image substitutions:', imageSubs)
-
-
     let html = decodeHTMLEntities(templateData.body)
-    console.log('Decoded body:', html)
     html = applyPreviewContext(html, dummyContext)
-
 
     for (const sub of imageSubs) {
         if (sub.urlData) {
@@ -75,21 +70,15 @@ const openDialog = async (templateData: any, imageSubs: any[]) => {
         }
     }
 
-
     imageSubs.forEach(sub => {
         if (sub.substitution) {
-
             let cleanSub = sub.substitution.trim().replace(/^\{\{/, '').replace(/\}\}$/, '').trim()
-            console.log(`Replacing {{${cleanSub}}} with image:`, sub.blobUrl || sub.urlData)
-
-
             const escapedSub = cleanSub.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
             const imagePattern = new RegExp(`{{\\s*${escapedSub}\\s*}}`, 'g')
             const imgTag = `<img src="${sub.blobUrl || sub.urlData}" alt="${sub.imageName}" style="max-width: 100%; height: auto;" />`
             html = html.replace(imagePattern, imgTag)
         }
     })
-    console.log('Final body after image replacement:', html)
 
     previewData.value = {
         ...templateData,
@@ -99,6 +88,7 @@ const openDialog = async (templateData: any, imageSubs: any[]) => {
     isShowDialog.value = true
 }
 
+// onClose 미리보기 모달 닫기
 const onClose = () => {
     isShowDialog.value = false
 }

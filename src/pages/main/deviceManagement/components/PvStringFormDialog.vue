@@ -70,16 +70,16 @@ import { BaseDialog } from '@/components'
 import type { PvStringItem, PvStringSaveParams } from '../service/deviceManagement.types'
 
 const props = defineProps<{
-    modelValue: boolean
-    pvString: PvStringItem | null
+    modelValue: boolean // 모달 표시 여부
+    pvString: PvStringItem | null // 수정 대상 PV 스트링 (신규 등록 시 null)
 }>()
 
 const emit = defineEmits<{
-    'update:modelValue': [value: boolean]
-    save: [value: PvStringSaveParams]
+    'update:modelValue': [value: boolean] // 모달 표시 상태 업데이트
+    save: [value: PvStringSaveParams] // PV 스트링 저장 이벤트
 }>()
 
-const formRef = ref<FormInstance | null>(null)
+const formRef = ref<FormInstance | null>(null) // 엘리먼트 폼 인스턴스
 const statusOptions = [
     { label: '정상', value: 'NORMAL' },
     { label: '주의', value: 'WARNING' },
@@ -87,6 +87,7 @@ const statusOptions = [
     { label: '점검', value: 'MAINTENANCE' },
 ]
 
+// createDefaultForm 기본 폼 입력값 생성
 const createDefaultForm = (): PvStringSaveParams => ({
     name: '',
     panel_count: null,
@@ -98,14 +99,16 @@ const createDefaultForm = (): PvStringSaveParams => ({
     memo: null,
 })
 
-const form = reactive<PvStringSaveParams>(createDefaultForm())
-const rules: FormRules = {
+const form = reactive<PvStringSaveParams>(createDefaultForm()) // PV 스트링 폼 데이터
+const rules: FormRules = { // 폼 유효성 검사 규칙
     name: [{ required: true, message: '스트링명을 입력하세요.', trigger: 'blur' }],
     status: [{ required: true, message: '상태를 선택하세요.', trigger: 'change' }],
 }
 
+// normalizeText 텍스트 공백 제거 및 빈 문자열 정규화
 const normalizeText = (value: string | null) => value?.trim() || null
 
+// syncForm 수정 대상 PV 스트링 데이터 바인딩 및 폼 초기화
 const syncForm = async () => {
     Object.assign(form, createDefaultForm())
     if (props.pvString) {
@@ -124,6 +127,7 @@ const syncForm = async () => {
     formRef.value?.clearValidate()
 }
 
+// watch(props.modelValue) 모달 오픈 시 폼 데이터 동기화
 watch(
     () => props.modelValue,
     value => {
@@ -133,10 +137,12 @@ watch(
     },
 )
 
+// closeDialog PV 스트링 등록/수정 모달 닫기
 const closeDialog = () => {
     emit('update:modelValue', false)
 }
 
+// savePvString 폼 유효성 검증 후 PV 스트링 정보 저장 전달
 const savePvString = async () => {
     if (!formRef.value) {
         return

@@ -124,16 +124,18 @@ import TrendDualAreaChart from './components/TrendDualAreaChart.vue'
 import trendApi from './service/trend.api'
 import type { TrendOverview } from './service/trend.types'
 
-const DEFAULT_REFRESH_INTERVAL = 10000
+const DEFAULT_REFRESH_INTERVAL = 10000 // 기본 폴링 주기(ms)
 
-const overview = ref<TrendOverview | null>(null)
-const essOverview = ref<EssOverview | null>(null)
-let pollingTimer: number | undefined
+const overview = ref<TrendOverview | null>(null) // 트렌드 모니터링 종합 데이터
+const essOverview = ref<EssOverview | null>(null) // ESS 모니터링 연동 데이터
+let pollingTimer: number | undefined // 주기적 데이터 갱신 타이머
 
+// formatNumber 숫자 천단위 포맷팅
 const formatNumber = (value?: number) => {
     return Number(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 1 })
 }
 
+// statusLabel 상태 코드 한국어 라벨 반환
 const statusLabel = (status?: string) => {
     if (status === 'EXPORT') {
         return '송전'
@@ -208,6 +210,7 @@ const kpiItems = computed(() => [
     },
 ])
 
+// getTrendOverview 트렌드 및 ESS 개요 데이터 병렬 조회
 const getTrendOverview = async () => {
     const [trendResponse, essResponse] = await Promise.all([trendApi.getOverview(), essApi.getOverview()])
     if (isSuccessResponse(trendResponse.result)) {
@@ -218,17 +221,20 @@ const getTrendOverview = async () => {
     }
 }
 
+// startPolling 주기적 자동 갱신 시작
 const startPolling = (interval: number) => {
     pollingTimer = window.setInterval(() => {
         getTrendOverview()
     }, interval)
 }
 
+// onMounted 초기 데이터 로드 및 폴링 시작
 onMounted(async () => {
     await getTrendOverview()
     startPolling(overview.value?.refreshInterval ?? DEFAULT_REFRESH_INTERVAL)
 })
 
+// onBeforeUnmount 컴포넌트 해제 시 폴링 타이머 정리
 onBeforeUnmount(() => {
     if (pollingTimer) {
         window.clearInterval(pollingTimer)

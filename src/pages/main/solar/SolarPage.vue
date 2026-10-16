@@ -109,12 +109,13 @@ import { isSuccessResponse } from '@/utils'
 import solarApi from './service/solar.api'
 import type { SolarOverview } from './service/solar.types'
 
-const DEFAULT_REFRESH_INTERVAL = 10000
+const DEFAULT_REFRESH_INTERVAL = 10000 // 기본 데이터 갱신 주기 (10초)
 
-const overview = ref<SolarOverview | null>(null)
-const isLoading = ref(false)
-let pollingTimer: number | undefined
+const overview = ref<SolarOverview | null>(null) // 태양광 종합 운영 현황 데이터
+const isLoading = ref(false) // 데이터 조회 중 여부
+let pollingTimer: number | undefined // 주기적 데이터 갱신 타이머 ID
 
+// 숫자를 소수점 1자리 로케일 형식으로 변환합니다.
 const formatNumber = (value?: number) => {
     return Number(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 1 })
 }
@@ -179,6 +180,7 @@ const inverterStatusItems = computed(() => [
     { label: '평균 출력', value: `${formatNumber(overview.value?.summary.averagePowerKw)} kW` },
 ])
 
+// 장비 운전 상태 코드를 한글 라벨로 변환합니다.
 const statusLabel = (status: string) => {
     if (status === 'NORMAL') {
         return '정상'
@@ -192,10 +194,12 @@ const statusLabel = (status: string) => {
     return status
 }
 
+// 장비 상태에 대응하는 뱃지 색상 variant를 반환합니다.
 const statusVariant = (status: string) => {
     return status === 'NORMAL' ? 'success' : 'progress'
 }
 
+// 태양광 발전 현황, 인버터 목록, 시간대별 출력 이력을 조회합니다.
 const getSolarData = async () => {
     isLoading.value = true
     try {
@@ -208,17 +212,20 @@ const getSolarData = async () => {
     }
 }
 
+// 지정된 주기로 태양광 데이터를 자동 갱신하는 폴링 타이머를 시작합니다.
 const startPolling = (interval: number) => {
     pollingTimer = window.setInterval(() => {
         getSolarData()
     }, interval)
 }
 
+// 화면 마운트 시 초기 데이터를 조회하고 실시간 폴링을 등록합니다.
 onMounted(async () => {
     await getSolarData()
     startPolling(overview.value?.refreshInterval ?? DEFAULT_REFRESH_INTERVAL)
 })
 
+// 컴포넌트 해제 시 실행 중인 폴링 타이머를 해제합니다.
 onBeforeUnmount(() => {
     if (pollingTimer) {
         window.clearInterval(pollingTimer)

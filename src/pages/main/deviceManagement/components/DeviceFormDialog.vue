@@ -176,18 +176,18 @@ import { BaseDialog } from '@/components'
 import type { DeviceItem, DeviceSaveParams, PvStringItem } from '../service/deviceManagement.types'
 
 const props = defineProps<{
-    modelValue: boolean
-    device: DeviceItem | null
-    pvStrings: PvStringItem[]
+    modelValue: boolean // 모달 표시 여부
+    device: DeviceItem | null // 수정 대상 장비 (신규 등록 시 null)
+    pvStrings: PvStringItem[] // 연결 가능한 PV 스트링 목록
 }>()
 
 const emit = defineEmits<{
-    'update:modelValue': [value: boolean]
-    save: [value: DeviceSaveParams]
+    'update:modelValue': [value: boolean] // 모달 표시 상태 업데이트
+    save: [value: DeviceSaveParams] // 장비 저장 이벤트
 }>()
 
-const formRef = ref<FormInstance | null>(null)
-const selectedPvStringId = ref<number | null>(null)
+const formRef = ref<FormInstance | null>(null) // 엘리먼트 폼 인스턴스
+const selectedPvStringId = ref<number | null>(null) // 추가 선택된 PV 스트링 ID
 
 const deviceTypeOptions = [
     { label: '인버터', value: 'INVERTER' },
@@ -210,6 +210,7 @@ const statusOptions = [
     { label: '점검', value: 'MAINTENANCE' },
 ]
 
+// createDefaultForm 기본 폼 입력값 생성
 const createDefaultForm = (): DeviceSaveParams => ({
     device_type: 'INVERTER',
     name: '',
@@ -235,7 +236,7 @@ const createDefaultForm = (): DeviceSaveParams => ({
     pv_string_links: [],
 })
 
-const form = reactive<DeviceSaveParams>(createDefaultForm())
+const form = reactive<DeviceSaveParams>(createDefaultForm()) // 장비 등록/수정 폼 데이터
 
 const isSensorType = computed(() => ['WEATHER_SENSOR', 'SENSOR'].includes(form.device_type))
 const capacityLabel = computed(() => (isSensorType.value ? '측정 범위' : '정격 용량'))
@@ -246,16 +247,18 @@ const availablePvStrings = computed(() =>
     props.pvStrings.filter(item => !linkedPvStringIds.value.includes(item.id) && !item.inverter_device_id),
 )
 
-const rules: FormRules = {
+const rules: FormRules = { // 폼 유효성 검사 규칙
     device_type: [{ required: true, message: '장비 유형을 선택하세요.', trigger: 'change' }],
     name: [{ required: true, message: '장비명을 입력하세요.', trigger: 'blur' }],
     status: [{ required: true, message: '상태를 선택하세요.', trigger: 'change' }],
 }
 
+// normalizeText 텍스트 공백 제거 및 빈 문자열 정규화
 const normalizeText = (value: string | null) => {
     return value?.trim() || null
 }
 
+// normalizeNumber 숫자 값 파싱 또는 null 반환
 const normalizeNumber = (value: number | string | null) => {
     if (value === null || value === '') {
         return null
@@ -263,10 +266,12 @@ const normalizeNumber = (value: number | string | null) => {
     return Number(value)
 }
 
+// resetForm 폼 입력값 초기화
 const resetForm = () => {
     Object.assign(form, createDefaultForm())
 }
 
+// syncForm 수정 대상 장비 데이터 바인딩 및 폼 초기화
 const syncForm = async () => {
     resetForm()
     if (props.device) {
@@ -299,6 +304,7 @@ const syncForm = async () => {
     formRef.value?.clearValidate()
 }
 
+// watch(props.modelValue) 모달 오픈 시 폼 데이터 동기화
 watch(
     () => props.modelValue,
     value => {
@@ -308,16 +314,19 @@ watch(
     },
 )
 
+// closeDialog 장비 등록/수정 모달 닫기
 const closeDialog = () => {
     emit('update:modelValue', false)
 }
 
+// pvStringName PV 스트링 ID에 대응하는 명칭 반환
 const pvStringName = (pvStringId: number) => {
     const pvString = props.pvStrings.find(item => item.id === pvStringId)
     const link = form.pv_string_links.find(item => item.pv_string_id === pvStringId)
     return pvString?.name || link?.pv_string_name || `PV String #${pvStringId}`
 }
 
+// addPvStringLink 인버터에 연결할 PV 스트링 항목 추가
 const addPvStringLink = () => {
     if (!selectedPvStringId.value || linkedPvStringIds.value.includes(selectedPvStringId.value)) {
         return
@@ -330,10 +339,12 @@ const addPvStringLink = () => {
     selectedPvStringId.value = null
 }
 
+// removePvStringLink 연결된 PV 스트링 항목 제거
 const removePvStringLink = (pvStringId: number) => {
     form.pv_string_links = form.pv_string_links.filter(item => item.pv_string_id !== pvStringId)
 }
 
+// saveDevice 폼 유효성 검증 후 장비 정보 저장 전달
 const saveDevice = async () => {
     if (!formRef.value) {
         return

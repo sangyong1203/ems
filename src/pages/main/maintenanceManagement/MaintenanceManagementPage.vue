@@ -145,13 +145,13 @@ import type {
     MaintenanceSaveParams,
 } from './service/maintenanceManagement.types'
 
-const maintenanceList = ref<MaintenanceItem[]>([])
-const selectedMaintenance = ref<MaintenanceItem | null>(null)
-const editingMaintenance = ref<MaintenanceItem | null>(null)
-const isFormDialogOpen = ref(false)
-const deviceOptions = ref<MaintenanceDeviceOption[]>([])
+const maintenanceList = ref<MaintenanceItem[]>([]) // 정비 이력 목록
+const selectedMaintenance = ref<MaintenanceItem | null>(null) // 선택된 정비 이력 상세
+const editingMaintenance = ref<MaintenanceItem | null>(null) // 편집 중인 정비 이력 (수정/등록)
+const isFormDialogOpen = ref(false) // 정비 등록/수정 모달 표시 여부
+const deviceOptions = ref<MaintenanceDeviceOption[]>([]) // 정비 대상 장비 옵션 목록
 
-const searchParams = reactive({
+const searchParams = reactive({ // 정비 이력 검색 파라미터
     keyword: '',
     deviceId: '' as number | '',
     maintenanceType: '',
@@ -159,7 +159,7 @@ const searchParams = reactive({
     dateFrom: '',
     dateTo: '',
 })
-const dateRange = ref<[string, string] | null>(null)
+const dateRange = ref<[string, string] | null>(null) // 검색용 점검 일자 범위
 
 const maintenanceTypeOptions = [
     { label: '정기점검', value: '정기점검' },
@@ -223,6 +223,7 @@ const kpiItems = computed(() => [
     },
 ])
 
+// deviceTypeLabel 장비 유형 코드 한국어 라벨 반환
 const deviceTypeLabel = (value: string | null) => {
     const labels: Record<string, string> = {
         INVERTER: '인버터',
@@ -240,10 +241,12 @@ const deviceTypeLabel = (value: string | null) => {
     return value ? labels[value] || value : '-'
 }
 
+// statusLabel 정비 상태 코드 한국어 라벨 반환
 const statusLabel = (value: string) => {
     return statusOptions.find(item => item.value === value)?.label || value || '-'
 }
 
+// statusVariant 정비 상태에 따른 배지 스타일 반환
 const statusVariant = (value: string) => {
     if (value === 'COMPLETED') {
         return 'success'
@@ -257,16 +260,19 @@ const statusVariant = (value: string) => {
     return 'info'
 }
 
+// selectMaintenance 정비 이력 행 선택
 const selectMaintenance = (maintenance: MaintenanceItem) => {
     selectedMaintenance.value = maintenance
 }
 
+// changeDateRange 검색 일자 범위 변경 및 목록 재조회
 const changeDateRange = (value: [string, string] | null) => {
     searchParams.dateFrom = value?.[0] || ''
     searchParams.dateTo = value?.[1] || ''
     getMaintenanceList()
 }
 
+// getDevices 정비 대상 장비 목록 조회
 const getDevices = async () => {
     const res = await maintenanceManagementApi.getDevices()
     if (isSuccessResponse(res.result)) {
@@ -274,6 +280,7 @@ const getDevices = async () => {
     }
 }
 
+// getMaintenanceList 정비 이력 목록 조회
 const getMaintenanceList = async () => {
     const res = await maintenanceManagementApi.getList({
         ...searchParams,
@@ -291,16 +298,19 @@ const getMaintenanceList = async () => {
     }
 }
 
+// openCreateDialog 신규 정비 이력 등록 모달 열기
 const openCreateDialog = () => {
     editingMaintenance.value = null
     isFormDialogOpen.value = true
 }
 
+// openEditDialog 기존 정비 이력 수정 모달 열기
 const openEditDialog = (maintenance: MaintenanceItem) => {
     editingMaintenance.value = maintenance
     isFormDialogOpen.value = true
 }
 
+// saveMaintenance 정비 이력 저장 (생성 또는 수정)
 const saveMaintenance = async (params: MaintenanceSaveParams) => {
     if (editingMaintenance.value) {
         await maintenanceManagementApi.updateMaintenance(editingMaintenance.value.id, params)
@@ -311,6 +321,7 @@ const saveMaintenance = async (params: MaintenanceSaveParams) => {
     await getMaintenanceList()
 }
 
+// deleteMaintenance 정비 이력 삭제 확인 및 처리
 const deleteMaintenance = async (maintenance: MaintenanceItem) => {
     await ElMessageBox.confirm(`${maintenance.title} 정비 이력을 삭제할까요?`, 'Confirm', {
         confirmButtonText: '삭제',
@@ -322,6 +333,7 @@ const deleteMaintenance = async (maintenance: MaintenanceItem) => {
     await getMaintenanceList()
 }
 
+// watch(searchParams.keyword) 키워드 초기화 시 목록 재조회
 watch(
     () => searchParams.keyword,
     (keyword, prevKeyword) => {
@@ -331,6 +343,7 @@ watch(
     },
 )
 
+// onMounted 장비 목록 및 정비 이력 초기 로드
 onMounted(async () => {
     await getDevices()
     await getMaintenanceList()

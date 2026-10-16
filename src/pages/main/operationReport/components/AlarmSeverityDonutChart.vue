@@ -10,12 +10,13 @@ import ReportEChart from './ReportEChart.vue'
 import { CHART_THEME } from '@/constants/colors'
 
 const props = defineProps<{
-    data: AlarmSeverityDistribution[]
+    data: AlarmSeverityDistribution[] // 알람 등급별 발생 분포 데이터
 }>()
 
 const chartTextColor = CHART_THEME.textColor
 const severityColors: Record<string, string> = CHART_THEME.severity
 
+// severityLabel 알람 등급 코드 한국어 라벨 반환
 const severityLabel = (severity: string) => {
     const labels: Record<string, string> = {
         CRITICAL: '심각',
@@ -25,6 +26,7 @@ const severityLabel = (severity: string) => {
     return labels[severity] ?? severity
 }
 
+// severityColor 알람 등급별 테마 색상 반환
 const severityColor = (severity: string) => {
     return severityColors[severity] ?? severityColors.INFO
 }

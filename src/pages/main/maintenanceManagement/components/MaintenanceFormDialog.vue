@@ -106,20 +106,21 @@ import type {
 } from '../service/maintenanceManagement.types'
 
 const props = defineProps<{
-    modelValue: boolean
-    maintenance: MaintenanceItem | null
-    deviceOptions: MaintenanceDeviceOption[]
-    maintenanceTypeOptions: { label: string; value: string }[]
-    statusOptions: { label: string; value: string }[]
+    modelValue: boolean // 모달 표시 여부
+    maintenance: MaintenanceItem | null // 수정 대상 정비 이력 (신규 등록 시 null)
+    deviceOptions: MaintenanceDeviceOption[] // 대상 장비 선택 옵션 목록
+    maintenanceTypeOptions: { label: string; value: string }[] // 정비 유형 선택 옵션 목록
+    statusOptions: { label: string; value: string }[] // 정비 상태 선택 옵션 목록
 }>()
 
 const emit = defineEmits<{
-    'update:modelValue': [value: boolean]
-    save: [value: MaintenanceSaveParams]
+    'update:modelValue': [value: boolean] // 모달 표시 상태 업데이트
+    save: [value: MaintenanceSaveParams] // 정비 이력 저장 이벤트
 }>()
 
-const formRef = ref<FormInstance | null>(null)
+const formRef = ref<FormInstance | null>(null) // 엘리먼트 폼 인스턴스
 
+// createDefaultForm 기본 폼 입력값 생성
 const createDefaultForm = (): MaintenanceSaveParams => ({
     device_id: null,
     alarm_id: null,
@@ -139,21 +140,24 @@ const createDefaultForm = (): MaintenanceSaveParams => ({
     memo: null,
 })
 
-const form = reactive<MaintenanceSaveParams>(createDefaultForm())
+const form = reactive<MaintenanceSaveParams>(createDefaultForm()) // 정비 등록/수정 폼 데이터
 
-const rules: FormRules = {
+const rules: FormRules = { // 폼 유효성 검사 규칙
     device_id: [{ required: true, message: '대상 장비를 선택하세요.', trigger: 'change' }],
     maintenance_type: [{ required: true, message: '정비 유형을 선택하세요.', trigger: 'change' }],
     title: [{ required: true, message: '정비 제목을 입력하세요.', trigger: 'blur' }],
     status: [{ required: true, message: '상태를 선택하세요.', trigger: 'change' }],
 }
 
+// normalizeText 텍스트 공백 제거 및 빈 문자열 정규화
 const normalizeText = (value: string | null | undefined) => value?.trim() || null
 
+// resetForm 폼 입력값 초기화
 const resetForm = () => {
     Object.assign(form, createDefaultForm())
 }
 
+// syncForm 수정 대상 데이터 바인딩 및 폼 초기화
 const syncForm = async () => {
     resetForm()
     if (props.maintenance) {
@@ -180,6 +184,7 @@ const syncForm = async () => {
     formRef.value?.clearValidate()
 }
 
+// watch(props.modelValue) 모달 오픈 시 폼 데이터 동기화
 watch(
     () => props.modelValue,
     value => {
@@ -189,10 +194,12 @@ watch(
     },
 )
 
+// closeDialog 정비 이력 모달 닫기
 const closeDialog = () => {
     emit('update:modelValue', false)
 }
 
+// saveMaintenance 폼 유효성 검증 후 정비 이력 저장 전달
 const saveMaintenance = async () => {
     if (!formRef.value) {
         return

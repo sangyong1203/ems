@@ -35,21 +35,24 @@ import { useAuthStore } from '@/stores/auth.store'
 import { useMenuStore } from '@/stores/menu.store'
 import { useNavStore } from '@/stores/nav.store'
 
-const appStore = useAppStore()
-const authStore = useAuthStore()
-const menuStore = useMenuStore()
-const navStore = useNavStore()
-const route = useRoute()
-const router = useRouter()
+const appStore = useAppStore() // 앱 상태 스토어
+const authStore = useAuthStore() // 인증 상태 스토어
+const menuStore = useMenuStore() // 메뉴 상태 스토어
+const navStore = useNavStore() // 네비게이션 히스토리 스토어
+const route = useRoute() // 현재 라우트 객체
+const router = useRouter() // 라우터 인스턴스
 
+// 뒤로가기 제어 이벤트 등록
 onMounted(() => {
-    // browser back button event
     window.addEventListener('popstate', backButtonEvent)
 })
+
+// 뒤로가기 제어 이벤트 해제
 onUnmounted(() => {
     window.removeEventListener('popstate', backButtonEvent)
 })
-// browser back button event
+
+// 브라우저 뒤로가기 방지 및 이전 네비게이션 복원
 function backButtonEvent(event: any) {
     console.log('popstate event triggered:', event.state)
     const nav = navStore.getNav()
@@ -60,12 +63,14 @@ function backButtonEvent(event: any) {
     }
 }
 
+// 사용자 설정 랜딩 페이지로 이동
 const toDashboard = () => {
     if (authStore.authState.user?.landingPage) {
         navStore.navTo('landingPage', authStore.authState.user.landingPage)
     }
 }
 
+// 현재 경로에 일치하는 메뉴 항목 재귀 검색
 const findMenuItem = (items: any[], path: string): { title: string; icon: string } => {
     for (const item of items) {
         if (item.path === path) return item
@@ -77,22 +82,19 @@ const findMenuItem = (items: any[], path: string): { title: string; icon: string
     return { title: '', icon: '' }
 }
 
+// 현재 활성화된 메뉴 정보 계산
 const currentMenuItem = computed(() => {
     const menuItem = findMenuItem(menuStore.getMenu(), route.path)
     return menuItem
-
-    // const nav = navStore.getNav()
-    // const lastNav = nav.at(-1)
-    // if (lastNav?.name && lastNav.name !== 'landingPage') return lastNav.name
-
-    // return String(route.name ?? 'Dashboard')
 })
 
+// 상단 헤더 표시용 사용자 이름 계산
 const userDisplayName = computed(() => {
     const user = authStore.authState.user
     return user?.name || user?.email || user?.loginId || 'User'
 })
 
+// 로그아웃 및 스토어 초기화
 const logOut = () => {
     authStore.clearSession()
     appStore.init()

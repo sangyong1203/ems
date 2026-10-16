@@ -35,13 +35,13 @@
 import { computed } from 'vue'
 import AppIcon from '@/components/widget/AppIcon.vue'
 
-const CELL_COUNT = 5
+const CELL_COUNT = 5 // 배터리 셀 그래픽 표시 개수
 
 const props = defineProps<{
-    soc: number
-    powerText: string
-    status: string
-    isCharging: boolean
+    soc: number // 배터리 충전율 (%)
+    powerText: string // 전력 표시 텍스트 (예: 12.5 kW)
+    status: string // 배터리 상태 텍스트
+    isCharging: boolean // 충전 중 여부
 }>()
 
 const normalizedSoc = computed(() => {

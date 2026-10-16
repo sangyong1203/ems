@@ -48,13 +48,15 @@ import { GlassPanel, KeyValueList } from '@/components'
 import type { EssOverview } from '../service/ess.types'
 
 const props = defineProps<{
-    overview: EssOverview | null
+    overview: EssOverview | null // ESS 개요 및 세부 상태 정보
 }>()
 
+// formatNumber 숫자 천단위 포맷팅
 const formatNumber = (value?: number) => {
     return Number(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 1 })
 }
 
+// modeLabel 운전 모드 한국어 명칭 반환
 const modeLabel = (mode?: string) => {
     if (mode === 'CHARGING') {
         return '충전'
@@ -65,6 +67,7 @@ const modeLabel = (mode?: string) => {
     return '대기'
 }
 
+// statusLabel 상태 코드 한국어 라벨 반환
 const statusLabel = (status?: string) => {
     if (status === 'NORMAL') {
         return '정상'
@@ -78,6 +81,7 @@ const statusLabel = (status?: string) => {
     return status || '-'
 }
 
+// statusClass 상태 코드에 따른 CSS 클래스 반환
 const statusClass = (status?: string) => {
     return {
         'is-normal': status === 'NORMAL',
