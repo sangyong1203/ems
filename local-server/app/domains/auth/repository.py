@@ -4,10 +4,12 @@ from sqlalchemy.orm import Session
 from .models import User
 
 
+# 로그인 ID가 정확히 일치하는 사용자를 조회합니다.
 def get_user_by_username(db: Session, username: str) -> User | None:
     return db.query(User).filter(User.username == username).first()
 
 
+# 검색어·역할·상태로 사용자를 조회하며 양수 페이지 조건일 때만 페이징합니다.
 def list_users(
     db: Session,
     *,
@@ -41,10 +43,12 @@ def list_users(
     return query.all(), total_count
 
 
+# 사용자 ID로 단건 조회하며 없으면 None을 반환합니다.
 def get_user(db: Session, user_id: int) -> User | None:
     return db.query(User).filter(User.id == user_id).first()
 
 
+# 이메일을 로그인 ID로, 초기 비밀번호를 1111로 설정하여 사용자를 저장하고 커밋합니다.
 def create_user(db: Session, payload: dict) -> User:
     user = User(
         username=payload["email"],
@@ -61,6 +65,7 @@ def create_user(db: Session, payload: dict) -> User:
     return user
 
 
+# 사용자 정보와 이메일 기반 로그인 ID를 갱신하고 커밋하며 없으면 None을 반환합니다.
 def update_user(db: Session, user_id: int, payload: dict) -> User | None:
     user = get_user(db, user_id)
     if user is None:
@@ -77,6 +82,7 @@ def update_user(db: Session, user_id: int, payload: dict) -> User | None:
     return user
 
 
+# 사용자를 삭제하고 커밋하며 대상이 없으면 False를 반환합니다.
 def delete_user(db: Session, user_id: int) -> bool:
     user = get_user(db, user_id)
     if user is None:

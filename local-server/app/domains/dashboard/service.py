@@ -13,6 +13,7 @@ from ..telemetry.repository import latest_site_map, latest_system_metric
 from ..telemetry.service import metric_value, telemetry_time, telemetry_value
 
 
+# 설비 용량·사업장 및 ESS 계측·최신 리포트·최근 알림과 정비를 대시보드 요약으로 결합합니다.
 def get_dashboard_summary(db: Session) -> dict:
     project = get_project_config(db)
     latest = latest_site_map(db)
@@ -80,27 +81,33 @@ def get_dashboard_summary(db: Session) -> dict:
     }
 
 
+# 공통 전력 흐름 계산 결과를 대시보드에 제공합니다.
 def get_power_flow(db: Session) -> dict:
     return get_power_flow_overview(db)
 
 
+# 최근 알림의 ID 목록을 발생 시각 내림차순으로 반환합니다.
 def get_recent_alarm_ids(db: Session) -> list[int]:
     return [item.id for item in recent_alarms(db)]
 
 
+# 최근 정비의 ID 목록을 정비일 내림차순으로 반환합니다.
 def get_recent_maintenance_ids(db: Session) -> list[int]:
     return [item.id for item in recent_maintenance(db)]
 
 
+# 종류가 일치하는 첫 장비의 상태를 반환하며 없으면 UNKNOWN을 사용합니다.
 def _status_for_device(devices: list[Device], device_type: str) -> str:
     device = next((item for item in devices if item.device_type == device_type), None)
     return device.status if device else "UNKNOWN"
 
 
+# 전체 ESS 시스템의 최신 SOC 평균 계산을 위임합니다.
 def _average_ess_soc(db: Session) -> float:
     return _average_ess_system_metric(db, "ess_soc")
 
 
+# 모든 ESS의 최신 지표를 평균내며 누락 계측은 0, 시스템이 없으면 0을 사용합니다.
 def _average_ess_system_metric(db: Session, metric_key: str) -> float:
     systems = list_ess_systems(db)
     if not systems:
@@ -113,6 +120,7 @@ def _average_ess_system_metric(db: Session, metric_key: str) -> float:
     return round(sum(values) / len(values), 1) if values else 0
 
 
+# 알림을 대시보드 표시 필드로 변환하고 발생 일시를 문자열로 구성합니다.
 def _alarm_to_dict(item) -> dict:
     return {
         "id": item.id,
@@ -124,6 +132,7 @@ def _alarm_to_dict(item) -> dict:
     }
 
 
+# 정비를 대시보드에서 사용할 요약 필드로 변환합니다.
 def _maintenance_to_dict(item) -> dict:
     return {
         "id": item.id,

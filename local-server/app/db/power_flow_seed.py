@@ -1,10 +1,11 @@
+# 일련번호에 연결된 장비 노드와 배선을 기본 전력 흐름 배치로 준비합니다.
 from sqlalchemy.orm import Session
 
 from ..domains.device.models import Device
 from ..domains.power_flow.models import PowerFlowLayout, PowerFlowLayoutNode, PowerFlowWire
 
 
-POWER_FLOW_NODES = [
+POWER_FLOW_NODES = [  # 노드 ID·장비 일련번호·x·y 좌표(px)의 기본 배치
     ("node-1784786141015-dd80ts", "RACK-2026-001", 1185.5999857584634, 1290.7498728434248),
     ("node-1784786142275-wu7nye", "RACK-2026-003", 1643.0221998426648, 1290.7498728434248),
     ("node-1784786146763-lhcy9v", "RACK-2026-002", 1414.3110928005642, 1290.7498728434248),
@@ -28,7 +29,7 @@ POWER_FLOW_NODES = [
 ]
 
 
-POWER_FLOW_WIRES = [
+POWER_FLOW_WIRES = [  # 배선 ID·출발 노드와 연결점·도착 노드와 연결점
     ("wire-1784786548527-vxqqg3", "node-1784786528146-gjn6pa", "BOTTOM", "node-1784786545633-k0q9zh", "TOP"),
     ("wire-1784786551439-p8dapk", "node-1784786153542-hmbrvk", "BOTTOM", "node-1784786528146-gjn6pa", "TOP"),
     ("wire-1784786556800-avljgm", "node-1784786141015-dd80ts", "TOP", "node-1784786545633-k0q9zh", "BOTTOM"),
@@ -51,6 +52,7 @@ POWER_FLOW_WIRES = [
 ]
 
 
+# 배치 노드가 하나도 없을 때 기본 배치를 추가하며 필수 일련번호의 장비가 없으면 실패합니다.
 def ensure_power_flow_layout(db: Session) -> None:
     if db.query(PowerFlowLayoutNode).count() > 0:
         return
@@ -72,7 +74,7 @@ def ensure_power_flow_layout(db: Session) -> None:
     serial_numbers = [serial_number for _, serial_number, _, _ in POWER_FLOW_NODES]
     devices = db.query(Device).filter(Device.serial_number.in_(serial_numbers)).all()
     devices_by_serial = {device.serial_number: device for device in devices}
-    missing_serials = sorted(set(serial_numbers) - set(devices_by_serial))
+    missing_serials = sorted(set(serial_numbers) - set(devices_by_serial))  # 배치에 필요하지만 DB에 없는 장비 일련번호
     if missing_serials:
         raise RuntimeError(f"Power-flow seed devices not found: {', '.join(missing_serials)}")
 

@@ -9,6 +9,7 @@ from ..core.database import engine
 from ..domains.simulator.generator import generate_today
 
 
+# 인덱스에 따른 일련번호와 통신 주소를 가진 기본 인버터 객체를 만듭니다.
 def _build_inverter(index: int) -> Device:
     return Device(
         device_type="INVERTER",
@@ -30,6 +31,7 @@ def _build_inverter(index: int) -> Device:
     )
 
 
+# 기본 인버터 15대 중 일련번호 기준으로 누락된 장비만 추가합니다.
 def _ensure_inverter_devices(db: Session) -> None:
     existing_serials = {
         serial_number
@@ -45,6 +47,7 @@ def _ensure_inverter_devices(db: Session) -> None:
         db.add_all(missing_inverters)
 
 
+# 배전반 장비가 하나도 없을 때 기본 AC 배전반을 추가합니다.
 def _ensure_ac_panel_device(db: Session) -> None:
     exists = db.query(Device).filter(Device.device_type == "AC_PANEL").first()
     if exists:
@@ -66,6 +69,7 @@ def _ensure_ac_panel_device(db: Session) -> None:
     )
 
 
+# 배터리 뱅크 장비가 없을 때 기본 ESS 배터리를 추가합니다.
 def _ensure_ess_battery_device(db: Session) -> None:
     exists = db.query(Device).filter(Device.device_type == "ESS_BATTERY").first()
     if exists:
@@ -87,6 +91,7 @@ def _ensure_ess_battery_device(db: Session) -> None:
     )
 
 
+# ESS 배터리 이름의 기존 접두사를 Battery Bank로 바꿉니다.
 def _normalize_battery_bank_names(db: Session) -> None:
     batteries = db.query(Device).filter(Device.device_type == "ESS_BATTERY").all()
     for battery in batteries:
@@ -94,6 +99,7 @@ def _normalize_battery_bank_names(db: Session) -> None:
             battery.name = battery.name.replace("ESS Battery", "Battery Bank", 1)
 
 
+# 스트링이 없으면 20개를 생성하고 첫 인버터에 앞의 4개를 연결합니다.
 def _ensure_pv_strings(db: Session) -> None:
     if db.query(PvString).count() > 0:
         return
@@ -126,6 +132,7 @@ def _ensure_pv_strings(db: Session) -> None:
             )
 
 
+# ESS 시스템이 없으면 첫 PCS·BMS·배터리 장비로 기본 시스템을 구성합니다.
 def _ensure_ess_systems(db: Session) -> None:
     if db.query(EssSystem).count() > 0:
         return
@@ -149,6 +156,7 @@ def _ensure_ess_systems(db: Session) -> None:
     )
 
 
+# 첫 ESS 시스템의 기본 랙 장비와 랙 번호별 연결 정보를 보충합니다.
 def _ensure_battery_racks(db: Session) -> None:
     db.flush()
     system = db.query(EssSystem).order_by(EssSystem.id.asc()).first()
@@ -199,6 +207,7 @@ def _ensure_battery_racks(db: Session) -> None:
             )
 
 
+# 기본 사용자를 추가하고 기존 사용자는 비밀번호를 제외한 빈 필드만 채웁니다.
 def _ensure_seed_users(db: Session) -> None:
     seed_users = [
         {
@@ -249,8 +258,10 @@ def _ensure_seed_users(db: Session) -> None:
                 setattr(user, key, value)
 
 
+# 등록된 모델의 테이블을 생성하고 기존 DB의 누락 컬럼과 사용자 정보를 보정합니다.
 def create_tables() -> None:
     Base.metadata.create_all(bind=engine)
+    # 기존 SQLite 파일을 재사용할 수 있도록 사용자 누락 컬럼과 기본 관리자 정보를 보정합니다.
     user_columns = {column["name"] for column in inspect(engine).get_columns("users")}
     user_column_defs = {
         "name": "VARCHAR(80) NOT NULL DEFAULT ''",
@@ -268,6 +279,7 @@ def create_tables() -> None:
         connection.execute(text("UPDATE users SET email = 'admin@Solar.local' WHERE username = 'admin' AND email = ''"))
         connection.execute(text("UPDATE users SET department = 'Platform' WHERE username = 'admin' AND department = ''"))
 
+    # 기존 장비 데이터는 유지하고 활성 여부와 이미지 컬럼만 추가합니다.
     device_columns = {column["name"] for column in inspect(engine).get_columns("devices")}
     if "is_active" not in device_columns:
         with engine.begin() as connection:
@@ -276,6 +288,7 @@ def create_tables() -> None:
         with engine.begin() as connection:
             connection.execute(text("ALTER TABLE devices ADD COLUMN image_path VARCHAR(255)"))
 
+    # 신규 화면별 갱신 주기는 기존 공통 갱신 주기의 값으로 초기화합니다.
     project_columns = {column["name"] for column in inspect(engine).get_columns("project_config")}
     refresh_interval_columns = [
         "dashboard_refresh_interval",
@@ -291,6 +304,7 @@ def create_tables() -> None:
                 connection.execute(text(f"UPDATE project_config SET {column} = data_refresh_interval"))
 
 
+# 기본 사용자·설비·장비 연결·전력 흐름 배치를 저장한 뒤 오늘의 가상 운전 데이터를 재생성합니다.
 def seed_database(db: Session) -> None:
     _ensure_seed_users(db)
 
@@ -398,6 +412,7 @@ def seed_database(db: Session) -> None:
     else:
         _ensure_inverter_devices(db)
 
+    # 기본 장비를 먼저 확보한 뒤 스트링·ESS·랙과 배치의 참조 관계를 구성합니다.
     _ensure_ac_panel_device(db)
     _ensure_ess_battery_device(db)
     _normalize_battery_bank_names(db)
@@ -409,4 +424,5 @@ def seed_database(db: Session) -> None:
     db.commit()
 
     if db.query(ProjectConfig).count() and db.query(Device).count():
+        # 서버 시작 때마다 계측 전체와 당일 리포트·샘플 알림·정비가 재생성됩니다.
         generate_today(db)

@@ -10,18 +10,20 @@ from ..telemetry.repository import history_by_metric, latest_metric
 from ..telemetry.service import history_points, metric_time, metric_value
 
 
+# 인버터별 운전 상태·용량·현재 발전 출력 응답
 class InverterItem(TypedDict):
-    id: int
-    name: str
-    status: str
-    isActive: bool
-    capacityKw: float
-    capacityUnit: str | None
-    currentPowerKw: float
-    capacityRatio: float
-    updatedAt: str | None
+    id: int  # 인버터 장비 ID
+    name: str  # 인버터 이름
+    status: str  # 장비 또는 설비 운전 상태
+    isActive: bool  # 인버터 활성 여부
+    capacityKw: float  # 인버터 정격 용량 (kW)
+    capacityUnit: str | None  # 인버터 용량 단위
+    currentPowerKw: float  # 현재 인버터 출력 (kW)
+    capacityRatio: float  # 정격 용량 대비 현재 출력 비율 (%)
+    updatedAt: str | None  # 최신 계측 시각; 계측이 없으면 None
 
 
+# 인버터 설치·운전 용량, 활성 장비 상태와 최근 발전 이력으로 태양광 요약을 구성합니다.
 def get_solar_overview(db: Session) -> dict:
     project = get_project_config(db)
     inverters = list_devices_by_type(db, "INVERTER", order_by_id=True)
@@ -74,6 +76,7 @@ def get_solar_overview(db: Session) -> dict:
     }
 
 
+# 인버터별 최신 출력과 정격 용량 대비 출력 비율을 계산하며 용량이 없으면 비율은 0입니다.
 def _inverter_item(db: Session, inverter: Device) -> InverterItem:
     inverter_power = latest_metric(db, "inverter_power_kw", inverter.id)
     capacity_kw = float(inverter.capacity or 0)

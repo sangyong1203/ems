@@ -1,3 +1,4 @@
+# 도메인 라우터를 한곳에 모아 앱에서 등록할 API를 구성합니다.
 from fastapi import APIRouter
 
 from ..domains.alarm.router import router as alarms_router
@@ -18,7 +19,7 @@ from ..domains.telemetry.router import router as telemetry_router
 from ..domains.trend.router import router as trend_router
 
 
-api_router = APIRouter()
+api_router = APIRouter()  # 도메인별 API를 묶는 최상위 라우터
 
 api_router.include_router(auth_router)
 api_router.include_router(users_router)

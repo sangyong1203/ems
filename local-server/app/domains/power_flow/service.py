@@ -5,6 +5,7 @@ from ..telemetry.repository import latest_site_map
 from ..telemetry.service import telemetry_time, telemetry_value
 
 
+# 사업장 최신 계측값으로 전력 흐름을 계산하며 ESS의 계통 송전은 비활성화합니다.
 def get_power_flow_overview(db: Session) -> dict:
     project = get_project_config(db)
     latest = latest_site_map(db)
@@ -26,6 +27,7 @@ def get_power_flow_overview(db: Session) -> dict:
     }
 
 
+# 태양광을 부하·ESS·계통 순으로 배분하고 ESS 방전 후 부족 부하는 계통 수전으로 계산합니다.
 def calculate_power_flow(
     solar_power: float,
     load_power: float,
@@ -86,6 +88,7 @@ def calculate_power_flow(
     }
 
 
+# 충전을 우선 판정하고 방전·대기 순으로 ESS 상태를 반환합니다.
 def _ess_status(solar_to_ess: float, ess_discharge: float) -> str:
     if solar_to_ess > 0:
         return "CHARGING"
@@ -94,6 +97,7 @@ def _ess_status(solar_to_ess: float, ess_discharge: float) -> str:
     return "STANDBY"
 
 
+# 송전을 우선 판정하고 수전·균형 순으로 계통 상태를 반환합니다.
 def _grid_status(grid_export: float, grid_import: float) -> str:
     if grid_export > 0:
         return "EXPORT"

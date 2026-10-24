@@ -11,6 +11,7 @@ from ..telemetry.models import TelemetryLatest
 from ..telemetry.repository import latest_site_map
 
 
+# 기본 배치를 조회하며 없으면 빈 기본 배치를 생성하고 커밋합니다.
 def _get_default_layout(db: Session) -> PowerFlowLayout:
     layout = db.query(PowerFlowLayout).filter(PowerFlowLayout.is_default.is_(True)).first()
     if layout is None:
@@ -21,6 +22,7 @@ def _get_default_layout(db: Session) -> PowerFlowLayout:
     return layout
 
 
+# 노드 중심 간 가로·세로 거리 중 큰 방향에 따라 서로 마주 보는 연결점을 선택합니다.
 def _choose_anchor(source_node: PowerFlowLayoutNode, target_node: PowerFlowLayoutNode) -> tuple[str, str]:
     delta_x = (target_node.x + target_node.width / 2) - (source_node.x + source_node.width / 2)
     delta_y = (target_node.y + target_node.height / 2) - (source_node.y + source_node.height / 2)
@@ -29,6 +31,7 @@ def _choose_anchor(source_node: PowerFlowLayoutNode, target_node: PowerFlowLayou
     return ("BOTTOM", "TOP") if delta_y >= 0 else ("TOP", "BOTTOM")
 
 
+# 두 노드 사이 배선이 있는지 방향을 구분하지 않고 확인합니다.
 def _has_existing_wire(
     wires: list[PowerFlowWire],
     source_node_id: str,
@@ -42,6 +45,7 @@ def _has_existing_wire(
     return False
 
 
+# 같은 ESS의 배터리 뱅크와 랙 사이 누락 배선을 추가하며 커밋은 호출자가 처리합니다.
 def _ensure_battery_rack_wires(
     db: Session,
     layout_id: int,
@@ -114,6 +118,7 @@ def _ensure_battery_rack_wires(
     return created
 
 
+# 기본 배치·전체 장비·사업장 및 장비별 계측값·인버터 모듈 수를 편집 화면용으로 구성합니다.
 def get_editor_data(db: Session) -> dict:
     layout = _get_default_layout(db)
     devices = db.query(Device).order_by(Device.device_type.asc(), Device.name.asc()).all()
@@ -148,6 +153,7 @@ def get_editor_data(db: Session) -> dict:
         "ambient_temperature_c": "℃",
     }
 
+    # 장비 종류별 0이 아닌 계측값을 우선 사용하고 없으면 정격 용량을 표시합니다. 배전반은 표시값이 없습니다.
     def device_metric(device: Device) -> tuple[float | None, str | None]:
         if device.device_type == "AC_PANEL":
             return None, None
@@ -225,11 +231,13 @@ def get_editor_data(db: Session) -> dict:
     }
 
 
+# 기본 배치의 노드·분기점·배선을 전부 교체하고 랙 배선을 보충한 뒤 커밋합니다.
 def save_editor_data(db: Session, payload: dict) -> dict:
     layout = _get_default_layout(db)
     layout.canvas_width = payload["canvas_width"]
     layout.canvas_height = payload["canvas_height"]
 
+    # 부분 갱신이 아니라 기본 배치 전체를 교체하므로 기존 배선·분기점·노드를 먼저 삭제합니다.
     db.query(PowerFlowWire).filter(PowerFlowWire.layout_id == layout.id).delete()
     db.query(PowerFlowJunction).filter(PowerFlowJunction.layout_id == layout.id).delete()
     db.query(PowerFlowLayoutNode).filter(PowerFlowLayoutNode.layout_id == layout.id).delete()

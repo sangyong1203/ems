@@ -11,6 +11,7 @@ from ..pv_string.repository import replace_inverter_links
 from ..telemetry.models import TelemetryHistory, TelemetryLatest
 
 
+# 종류·상태·검색어로 장비를 필터링하고 종류와 이름 순으로 조회합니다.
 def list_devices(db: Session, device_type: str = "", status: str = "", keyword: str = "") -> list[Device]:
     query = db.query(Device).order_by(Device.device_type.asc(), Device.name.asc())
     if device_type:
@@ -32,10 +33,12 @@ def list_devices(db: Session, device_type: str = "", status: str = "", keyword: 
     return query.all()
 
 
+# 활성 여부나 종류를 제한하지 않고 모든 장비를 조회합니다.
 def list_all_devices(db: Session) -> list[Device]:
     return db.query(Device).all()
 
 
+# 종류에 해당하는 장비를 이름 또는 ID 오름차순으로 조회합니다.
 def list_devices_by_type(db: Session, device_type: str, order_by_id: bool = False) -> list[Device]:
     query = db.query(Device).filter(Device.device_type == device_type)
     if order_by_id:
@@ -45,14 +48,17 @@ def list_devices_by_type(db: Session, device_type: str, order_by_id: bool = Fals
     return query.all()
 
 
+# 종류가 일치하는 첫 장비를 조회하며 없으면 None을 반환합니다.
 def first_device_by_type(db: Session, device_type: str) -> Device | None:
     return db.query(Device).filter(Device.device_type == device_type).first()
 
 
+# 장비 ID로 단건 조회하며 없으면 None을 반환합니다.
 def get_device(db: Session, device_id: int) -> Device | None:
     return db.query(Device).filter(Device.id == device_id).first()
 
 
+# 장비를 커밋한 뒤 전달된 스트링 연결을 저장하며 인버터 외 장비의 연결은 비웁니다.
 def create_device(db: Session, payload: dict, pv_string_links: list[dict] | None = None) -> Device:
     device = Device(**payload)
     db.add(device)
@@ -67,6 +73,7 @@ def create_device(db: Session, payload: dict, pv_string_links: list[dict] | None
     return device
 
 
+# 장비와 전달된 스트링 연결을 갱신·커밋하며 연결 인자가 None이면 기존 연결을 유지합니다.
 def update_device(db: Session, device_id: int, payload: dict, pv_string_links: list[dict] | None = None) -> Device | None:
     device = get_device(db, device_id)
     if device is None:
@@ -82,6 +89,7 @@ def update_device(db: Session, device_id: int, payload: dict, pv_string_links: l
     return device
 
 
+# ESS·스트링·배치·계측·알림·정비에서 장비를 참조하는 항목을 수집합니다.
 def device_delete_blockers(db: Session, device_id: int) -> list[str]:
     blockers: list[str] = []
     if (
@@ -114,6 +122,7 @@ def device_delete_blockers(db: Session, device_id: int) -> list[str]:
     return blockers
 
 
+# 장비를 삭제하고 커밋하며 참조 여부 검사는 호출 서비스에서 수행합니다.
 def delete_device(db: Session, device_id: int) -> bool:
     device = get_device(db, device_id)
     if device is None:

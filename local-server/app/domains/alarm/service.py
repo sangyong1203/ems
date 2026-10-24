@@ -12,6 +12,7 @@ from .schemas import AlarmOut
 from ..maintenance.schemas import MaintenanceOut
 
 
+# 검색 결과에 장비·정비 정보를 합쳐 목록과 검색 건수를 반환합니다.
 def get_alarm_list(
     db: Session,
     keyword: str = "",
@@ -38,6 +39,7 @@ def get_alarm_list(
     }
 
 
+# 알림의 장비·정비 상세 정보를 반환하며 대상이 없으면 404 오류를 발생시킵니다.
 def get_alarm_detail(db: Session, alarm_id: int) -> dict:
     result = get_alarm_with_device(db, alarm_id)
     if result is None:
@@ -46,6 +48,7 @@ def get_alarm_detail(db: Session, alarm_id: int) -> dict:
     return _alarm_to_dict(alarm, device, maintenance)
 
 
+# 알림을 확인 처리한 뒤 갱신된 상세를 반환하며 없으면 404 오류를 발생시킵니다.
 def ack_alarm(db: Session, alarm_id: int) -> dict:
     alarm = acknowledge_alarm(db, alarm_id)
     if alarm is None:
@@ -53,6 +56,7 @@ def ack_alarm(db: Session, alarm_id: int) -> dict:
     return get_alarm_detail(db, alarm_id)
 
 
+# 알림을 해결 처리한 뒤 갱신된 상세를 반환하며 없으면 404 오류를 발생시킵니다.
 def complete_alarm(db: Session, alarm_id: int) -> dict:
     alarm = resolve_alarm(db, alarm_id)
     if alarm is None:
@@ -60,6 +64,7 @@ def complete_alarm(db: Session, alarm_id: int) -> dict:
     return get_alarm_detail(db, alarm_id)
 
 
+# 알림에 연결된 정비를 생성 또는 재사용하고 정비 응답으로 변환합니다.
 def add_alarm_maintenance(db: Session, alarm_id: int) -> dict:
     maintenance = create_alarm_maintenance(db, alarm_id)
     if maintenance is None:
@@ -67,6 +72,7 @@ def add_alarm_maintenance(db: Session, alarm_id: int) -> dict:
     return MaintenanceOut.model_validate(maintenance).model_dump()
 
 
+# 알림 응답에 선택적인 연결 장비와 정비 정보를 덧붙입니다.
 def _alarm_to_dict(alarm, device=None, maintenance=None) -> dict:
     data = AlarmOut.model_validate(alarm).model_dump()
     data["device_name"] = device.name if device else None

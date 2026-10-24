@@ -3,6 +3,7 @@
 from .models import Device
 
 
+# 장비 종류와 단위가 일치하는 용량을 합산하며 단위는 대소문자를 구분하지 않습니다.
 def _capacity_sum(devices: list[Device], device_type: str, capacity_unit: str) -> float:
     return round(
         sum(
@@ -14,6 +15,7 @@ def _capacity_sum(devices: list[Device], device_type: str, capacity_unit: str) -
     )
 
 
+# 전체·활성 장비의 종류별 수와 태양광·ESS 설치 및 운전 용량을 집계합니다.
 def get_equipment_summary(db: Session) -> dict:
     devices = db.query(Device).all()
     active_devices = [device for device in devices if device.is_active]

@@ -12,6 +12,7 @@ from ..telemetry.repository import (
 from ..telemetry.service import history_points, metric_time, metric_value, telemetry_value
 
 
+# 사업장 계측과 첫 ESS 시스템의 최신값·최근 이력 24개를 트렌드 응답으로 구성합니다.
 def get_trend_overview(db: Session) -> dict:
     project = get_project_config(db)
     equipment = get_equipment_summary(db)
@@ -19,9 +20,11 @@ def get_trend_overview(db: Session) -> dict:
     ess_system = first_ess_system(db)
     system_id = ess_system.id if ess_system else None
 
+    # 첫 ESS가 있을 때만 시스템별 최신 계측값을 조회합니다.
     def system_latest(metric_key: str):
         return latest_system_metric(db, system_id, metric_key) if system_id is not None else None
 
+    # 첫 ESS의 최근 지표 이력 24개를 조회하며 시스템이 없으면 빈 목록을 반환합니다.
     def system_history(metric_key: str):
         return system_history_by_metric(db, system_id, metric_key, 24) if system_id is not None else []
 
@@ -66,6 +69,7 @@ def get_trend_overview(db: Session) -> dict:
     }
 
 
+# 송전을 우선 판정하고 수전·균형 순으로 계통 상태를 반환합니다.
 def _grid_status(grid_export: float, grid_import: float) -> str:
     if grid_export > 0:
         return "EXPORT"

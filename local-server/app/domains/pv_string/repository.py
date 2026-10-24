@@ -5,6 +5,7 @@ from .models import InverterPvStringLink, PvString
 from ..device.models import Device
 
 
+# 스트링 정보에 선택적인 인버터와 MPPT·채널 연결 정보를 합칩니다.
 def _pv_string_row(item: PvString, link: InverterPvStringLink | None, inverter: Device | None) -> dict:
     return {
         "id": item.id,
@@ -23,6 +24,7 @@ def _pv_string_row(item: PvString, link: InverterPvStringLink | None, inverter: 
     }
 
 
+# 스트링을 연결 정보와 결합하고 상태·검색어·연결 여부로 필터링합니다.
 def list_pv_strings(db: Session, status: str = "", keyword: str = "", connection: str = "") -> list[dict]:
     query = (
         db.query(PvString, InverterPvStringLink, Device)
@@ -49,6 +51,7 @@ def list_pv_strings(db: Session, status: str = "", keyword: str = "", connection
     return [_pv_string_row(item, link, inverter) for item, link, inverter in query.all()]
 
 
+# 스트링과 인버터 연결 정보를 조회하며 없으면 None을 반환합니다.
 def get_pv_string(db: Session, pv_string_id: int) -> dict | None:
     row = (
         db.query(PvString, InverterPvStringLink, Device)
@@ -63,6 +66,7 @@ def get_pv_string(db: Session, pv_string_id: int) -> dict | None:
     return _pv_string_row(item, link, inverter)
 
 
+# 스트링을 생성·커밋한 뒤 연결 정보를 포함하여 다시 조회합니다.
 def create_pv_string(db: Session, payload: dict) -> dict:
     item = PvString(**payload)
     db.add(item)
@@ -71,6 +75,7 @@ def create_pv_string(db: Session, payload: dict) -> dict:
     return get_pv_string(db, item.id) or {}
 
 
+# 스트링 필드를 갱신·커밋한 뒤 다시 조회하며 대상이 없으면 None을 반환합니다.
 def update_pv_string(db: Session, pv_string_id: int, payload: dict) -> dict | None:
     item = db.query(PvString).filter(PvString.id == pv_string_id).first()
     if item is None:
@@ -81,6 +86,7 @@ def update_pv_string(db: Session, pv_string_id: int, payload: dict) -> dict | No
     return get_pv_string(db, pv_string_id)
 
 
+# 스트링의 인버터 연결을 먼저 지운 뒤 스트링을 삭제하고 커밋합니다.
 def delete_pv_string(db: Session, pv_string_id: int) -> bool:
     item = db.query(PvString).filter(PvString.id == pv_string_id).first()
     if item is None:
@@ -91,6 +97,7 @@ def delete_pv_string(db: Session, pv_string_id: int) -> bool:
     return True
 
 
+# 인버터의 스트링 연결을 MPPT·채널·스트링 이름 순으로 조회합니다.
 def list_inverter_links(db: Session, inverter_device_id: int) -> list[dict]:
     rows = (
         db.query(InverterPvStringLink, PvString, Device)
@@ -114,6 +121,7 @@ def list_inverter_links(db: Session, inverter_device_id: int) -> list[dict]:
     ]
 
 
+# 기존 연결을 전부 교체하며 다른 인버터의 동일 스트링 연결도 해제합니다. 커밋은 호출자가 처리합니다.
 def replace_inverter_links(db: Session, inverter_device_id: int, links: list[dict]) -> None:
     db.query(InverterPvStringLink).filter(InverterPvStringLink.inverter_device_id == inverter_device_id).delete()
     for item in links:

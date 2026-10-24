@@ -20,7 +20,7 @@ from ..telemetry.models import (
 )
 
 
-METRIC_UNITS = {
+METRIC_UNITS = {  # 가상 계측 지표별 저장 단위
     "solar_power_kw": "kW",
     "solar_today_kwh": "kWh",
     "solar_total_kwh": "kWh",
@@ -50,6 +50,7 @@ METRIC_UNITS = {
 }
 
 
+# 6~19시의 사인 곡선으로 최대 500kW의 가상 발전 출력을 계산합니다.
 def _solar_power_for_hour(hour: int) -> float:
     if hour < 6 or hour > 19:
         return 0
@@ -57,6 +58,7 @@ def _solar_power_for_hour(hour: int) -> float:
     return round(max(0, sin(daylight_ratio * pi)) * 500, 1)
 
 
+# 장비·지표별 최신값을 추가하거나 덮어쓰며 새 행은 즉시 flush하고 커밋은 호출자가 처리합니다.
 def _upsert_latest(db: Session, device_id: int | None, metric_key: str, value: float, measured_at: datetime) -> None:
     latest = (
         db.query(TelemetryLatest)
@@ -81,6 +83,7 @@ def _upsert_latest(db: Session, device_id: int | None, metric_key: str, value: f
     latest.measured_at = measured_at
 
 
+# 사업장 지표별 최신값을 추가하거나 덮어쓰며 커밋은 호출자가 처리합니다.
 def _upsert_site_latest(db: Session, metric_key: str, value: float, measured_at: datetime) -> None:
     latest = db.query(SiteTelemetryLatest).filter(SiteTelemetryLatest.metric_key == metric_key).first()
     if latest is None:
@@ -100,6 +103,7 @@ def _upsert_site_latest(db: Session, metric_key: str, value: float, measured_at:
     latest.measured_at = measured_at
 
 
+# ESS 시스템·지표별 최신값을 추가하거나 덮어쓰며 커밋은 호출자가 처리합니다.
 def _upsert_system_latest(
     db: Session,
     ess_system_id: int,
@@ -133,6 +137,7 @@ def _upsert_system_latest(
     latest.measured_at = measured_at
 
 
+# 충방전 지표는 PCS, ESS·배터리 지표는 BMS에 연결하고 나머지는 장비 없이 생성합니다.
 def _metric_device_id(metric_key: str, pcs: Device | None, bms: Device | None) -> int | None:
     if metric_key in {"ess_charge_kw", "ess_discharge_kw"}:
         return pcs.id if pcs else None
@@ -141,6 +146,7 @@ def _metric_device_id(metric_key: str, pcs: Device | None, bms: Device | None) -
     return None
 
 
+# 계측·알림·정비 기록·일일 리포트를 모두 삭제하고 커밋하며 장비와 설정은 유지합니다.
 def reset_operational_data(db: Session) -> None:
     db.execute(delete(TelemetryLatest))
     db.execute(delete(TelemetryHistory))
@@ -155,11 +161,13 @@ def reset_operational_data(db: Session) -> None:
     db.commit()
 
 
+# 계측 전체와 당일 리포트를 교체하고 24시간 가상 이력·알림·정비를 생성합니다. 최신값은 현재 시각까지만 반영합니다.
 def generate_today(db: Session) -> dict:
     now = datetime.now().replace(second=0, microsecond=0)
     today_start = now.replace(hour=0, minute=0)
-    random = Random(today_start.strftime("%Y%m%d"))
+    random = Random(today_start.strftime("%Y%m%d"))  # 같은 날짜에는 같은 난수 순서를 사용하는 가상 데이터 생성기
 
+    # 과거 날짜의 리포트는 남기고 계측 테이블 전체와 오늘의 리포트만 비웁니다.
     db.execute(delete(TelemetryLatest))
     db.execute(delete(TelemetryHistory))
     db.execute(delete(SiteTelemetryLatest))
@@ -189,6 +197,7 @@ def generate_today(db: Session) -> dict:
     )
     soc_samples: list[float] = []
 
+    # 미래 시간을 포함한 하루 전체 이력을 만들되 최신 테이블에는 현재 시각까지의 값만 반영합니다.
     for hour in range(24):
         measured_at = today_start + timedelta(hours=hour)
         solar_power = _solar_power_for_hour(hour)
@@ -237,7 +246,7 @@ def generate_today(db: Session) -> dict:
             "battery_current_a": round((ess_charge - ess_discharge) * 1.35, 1),
             "battery_temperature_c": battery_temperature,
         }
-        legacy_values = {**site_values, **system_values}
+        legacy_values = {**site_values, **system_values}  # 기존 계측 API에서 조회하는 통합 지표
 
         for key, value in site_values.items():
             db.add(
@@ -335,6 +344,7 @@ def generate_today(db: Session) -> dict:
                 if measured_at <= now:
                     _upsert_latest(db, rack.id, key, value, measured_at)
 
+        # 한 시간 간격의 전력(kW)을 합산하여 하루 에너지(kWh)를 계산합니다.
         total_generation += solar_power
         total_charge += ess_charge
         total_discharge += ess_discharge
@@ -375,6 +385,7 @@ def generate_today(db: Session) -> dict:
     return {"generatedAt": now.strftime("%Y-%m-%d %H:%M:%S")}
 
 
+# 오늘 데이터를 재생성한 뒤 오늘 합계에 가상 보정값을 적용하여 이전 6일의 리포트를 교체합니다.
 def generate_last_7_days(db: Session) -> dict:
     result = generate_today(db)
     today = datetime.now().date()
@@ -420,18 +431,21 @@ def generate_last_7_days(db: Session) -> dict:
     return {"generatedAt": result["generatedAt"], "dayCount": 7}
 
 
+# 기존 알림을 샘플 3건으로 교체하고 커밋한 뒤 생성 시각을 반환합니다.
 def generate_sample_alarms(db: Session) -> dict:
     _generate_sample_alarms(db)
     db.commit()
     return {"generatedAt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "alarmCount": 3}
 
 
+# 기존 정비 기록을 샘플 2건으로 교체하고 커밋한 뒤 생성 시각을 반환합니다.
 def generate_sample_maintenance(db: Session) -> dict:
     _generate_sample_maintenance(db)
     db.commit()
     return {"generatedAt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "maintenanceCount": 2}
 
 
+# 정비의 알림 연결을 해제하고 기존 알림을 샘플 3건으로 교체하며 커밋은 호출자가 처리합니다.
 def _generate_sample_alarms(db: Session) -> None:
     db.query(MaintenanceRecord).filter(MaintenanceRecord.alarm_id.isnot(None)).update(
         {MaintenanceRecord.alarm_id: None},
@@ -474,6 +488,7 @@ def _generate_sample_alarms(db: Session) -> None:
     )
 
 
+# 기존 정비 기록을 샘플 2건으로 교체하며 커밋은 호출자가 처리합니다.
 def _generate_sample_maintenance(db: Session) -> None:
     db.execute(delete(MaintenanceRecord))
     today = datetime.now().date()

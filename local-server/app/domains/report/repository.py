@@ -6,10 +6,12 @@ from ..alarm.models import Alarm
 from ..telemetry.models import TelemetryLatest
 
 
+# 리포트 날짜 기준으로 가장 최근 사업장 일일 리포트를 조회합니다.
 def latest_daily_report(db: Session) -> DailyReport | None:
     return db.query(DailyReport).order_by(DailyReport.report_date.desc()).first()
 
 
+# 지정 ESS 시스템의 가장 최근 일일 리포트를 조회합니다.
 def latest_ess_daily_report(db: Session, ess_system_id: int) -> EssDailyReport | None:
     return (
         db.query(EssDailyReport)
@@ -19,12 +21,14 @@ def latest_ess_daily_report(db: Session, ess_system_id: int) -> EssDailyReport |
     )
 
 
+# 날짜가 있으면 해당 일자, 생략하면 가장 최근 리포트를 조회합니다.
 def get_daily_report(db: Session, report_date: str = "") -> DailyReport | None:
     if report_date:
         return db.query(DailyReport).filter(DailyReport.report_date == report_date).first()
     return latest_daily_report(db)
 
 
+# 기간 내 일일 리포트를 합산하며 시작일 생략 시 최신 날짜, 종료일 생략 시 시작일을 사용합니다.
 def get_report_summary(db: Session, date_from: str = "", date_to: str = "") -> dict | None:
     latest = latest_daily_report(db)
     if latest is None:
@@ -62,6 +66,7 @@ def get_report_summary(db: Session, date_from: str = "", date_to: str = "") -> d
     }
 
 
+# 일일 에너지 수지로 부하를 계산하고 태양광·계통·ESS 순으로 공급량을 배분합니다.
 def _load_breakdown(report: DailyReport) -> dict:
     load_total = max(
         report.generation_kwh
@@ -85,15 +90,18 @@ def _load_breakdown(report: DailyReport) -> dict:
     }
 
 
+# 지표가 일치하는 첫 계측값을 반환하며 없으면 전달된 기본값을 사용합니다.
 def _latest_metric_value(db: Session, metric_key: str, default: float = 0) -> float:
     item = db.query(TelemetryLatest).filter(TelemetryLatest.metric_key == metric_key).first()
     return float(item.metric_value) if item is not None else default
 
 
+# 시작일에서 종료일 23:59:59까지 발생한 알림의 조회 조건을 만듭니다.
 def _alarm_query(db: Session, start_date: str, end_date: str):
     return db.query(Alarm).filter(Alarm.occurred_at >= start_date, Alarm.occurred_at <= f"{end_date} 23:59:59")
 
 
+# 일일 리포트와 알림을 집계하며 온도·SOC 시계열은 최신값에 일자별 가상 편차를 적용합니다.
 def get_report_statistics(db: Session, date_from: str = "", date_to: str = "") -> dict | None:
     summary = get_report_summary(db, date_from, date_to)
     if summary is None:
@@ -107,8 +115,8 @@ def get_report_statistics(db: Session, date_from: str = "", date_to: str = "") -
         .order_by(DailyReport.report_date.asc())
         .all()
     )
-    latest_temperature = _latest_metric_value(db, "ambient_temperature_c", 24)
-    latest_soc = _latest_metric_value(db, "ess_soc", 70)
+    latest_temperature = _latest_metric_value(db, "ambient_temperature_c", 24)  # 일별 가상 온도 시계열의 기준값 (℃)
+    latest_soc = _latest_metric_value(db, "ess_soc", 70)  # 일별 가상 SOC 시계열의 기준값 (%)
 
     series = []
     for index, report in enumerate(reports):

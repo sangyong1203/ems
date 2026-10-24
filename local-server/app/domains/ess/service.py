@@ -11,6 +11,7 @@ from ..telemetry.repository import history_by_metric, latest_metric, latest_syst
 from ..telemetry.service import history_points, metric_time, metric_value
 
 
+# ESS별 상태·계측 요약을 구성하고 전체 용량·평균 SOC·현재 전력을 집계합니다.
 def get_ess_systems(db: Session) -> dict:
     systems = list_ess_systems(db)
     items = [_system_list_item(db, system) for system in systems]
@@ -33,6 +34,7 @@ def get_ess_systems(db: Session) -> dict:
     }
 
 
+# 첫 ESS 시스템의 상세를 반환하며 시스템이 없으면 404 오류를 발생시킵니다.
 def get_ess_overview(db: Session) -> dict:
     system = first_ess_system(db)
     if system is None:
@@ -40,6 +42,7 @@ def get_ess_overview(db: Session) -> dict:
     return _build_ess_overview(db, system)
 
 
+# 지정 ESS 시스템의 상세를 반환하며 없으면 404 오류를 발생시킵니다.
 def get_ess_system_overview(db: Session, system_id: int) -> dict:
     system = get_ess_system(db, system_id)
     if system is None:
@@ -47,6 +50,7 @@ def get_ess_system_overview(db: Session, system_id: int) -> dict:
     return _build_ess_overview(db, system)
 
 
+# 연결 장비 상태와 시스템별 최신 계측값으로 ESS 목록 항목을 구성합니다.
 def _system_list_item(db: Session, system: EssSystem) -> dict:
     pcs = get_device(db, system.pcs_device_id) if system.pcs_device_id else None
     bms = get_device(db, system.bms_device_id) if system.bms_device_id else None
@@ -72,6 +76,7 @@ def _system_list_item(db: Session, system: EssSystem) -> dict:
     }
 
 
+# ESS의 장비·계측 이력·최신 일일 리포트·랙 정보와 고정 표시 기준값을 결합합니다.
 def _build_ess_overview(db: Session, system: EssSystem) -> dict:
     project = get_project_config(db)
     daily_report = latest_ess_daily_report(db, system.id)
@@ -157,6 +162,7 @@ def _build_ess_overview(db: Session, system: EssSystem) -> dict:
     }
 
 
+# ESS에 연결된 랙별 최근 온도 이력 24개를 시간 오름차순으로 반환합니다.
 def _battery_rack_temperature_history(db: Session, system: EssSystem) -> list[dict]:
     return [
         {
@@ -169,6 +175,7 @@ def _battery_rack_temperature_history(db: Session, system: EssSystem) -> list[di
     ]
 
 
+# 랙별 최신 계측값을 모으고 가장 최근 계측 시각과 온도 기준 상태를 계산합니다.
 def _battery_rack_items(db: Session, system: EssSystem) -> list[dict]:
     items: list[dict] = []
     for link, rack in list_battery_racks(db, system.id):
@@ -204,6 +211,7 @@ def _battery_rack_items(db: Session, system: EssSystem) -> list[dict]:
     return items
 
 
+# 비활성·고장·주의 순으로 판정하며 최고 온도 50℃ 이상은 고장, 40℃ 이상은 주의입니다.
 def _battery_rack_status(rack: Device, max_temperature: float) -> str:
     if not rack.is_active:
         return "INACTIVE"
@@ -214,6 +222,7 @@ def _battery_rack_status(rack: Device, max_temperature: float) -> str:
     return "NORMAL"
 
 
+# 충전 전력이 양수이면 충전, 아니면 방전 전력에 따라 방전 또는 대기를 반환합니다.
 def _ess_mode(charge_kw: float, discharge_kw: float) -> str:
     if charge_kw > 0:
         return "CHARGING"
@@ -222,6 +231,7 @@ def _ess_mode(charge_kw: float, discharge_kw: float) -> str:
     return "STANDBY"
 
 
+# 시스템과 연결 장비에 고장이 있으면 FAULT, 주의나 누락 장비가 있으면 WARNING을 반환합니다.
 def _system_status(system: EssSystem, pcs: Device | None, bms: Device | None, battery: Device | None) -> str:
     statuses = [system.status, pcs.status if pcs else "UNKNOWN", bms.status if bms else "UNKNOWN", battery.status if battery else "UNKNOWN"]
     if "FAULT" in statuses:
@@ -231,12 +241,14 @@ def _system_status(system: EssSystem, pcs: Device | None, bms: Device | None, ba
     return "NORMAL"
 
 
+# 목록 평균을 소수점 한 자리로 반환하며 빈 목록이면 0을 반환합니다.
 def _average(values: list[float]) -> float:
     if not values:
         return 0
     return round(sum(values) / len(values), 1)
 
 
+# 장비 표시 정보를 반환하며 연결 장비가 없으면 UNKNOWN 상태의 빈 정보를 구성합니다.
 def _device_to_dict(device: Device | None) -> dict:
     if not device:
         return {
