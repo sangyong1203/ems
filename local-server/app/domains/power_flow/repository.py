@@ -153,7 +153,7 @@ def get_editor_data(db: Session) -> dict:
         "ambient_temperature_c": "℃",
     }
 
-    # 장비 종류별 0이 아닌 계측값을 우선 사용하고 없으면 정격 용량을 표시합니다. 배전반은 표시값이 없습니다.
+    # 0이 아닌 계측값을 우선 표시하고 모두 0이면 0을 유지하며, 계측 자체가 없을 때만 정격 용량을 사용합니다.
     def device_metric(device: Device) -> tuple[float | None, str | None]:
         if device.device_type == "AC_PANEL":
             return None, None
@@ -169,10 +169,18 @@ def get_editor_data(db: Session) -> dict:
             "WEATHER_SENSOR": ["ambient_temperature_c"],
             "SENSOR": ["ambient_temperature_c"],
         }.get(device.device_type, [])
+        zero_metric: tuple[float, str | None] | None = None  # 유효한 0 계측값과 표시 단위
         for metric_key in metric_keys:
             metric = telemetry_by_device.get((device.id, metric_key)) or telemetry.get(metric_key)
-            if metric is not None and float(metric.metric_value) != 0:
-                return float(metric.metric_value), metric.unit or metric_units.get(metric_key)
+            if metric is not None:
+                value = float(metric.metric_value)
+                unit = metric.unit or metric_units.get(metric_key)
+                if value != 0:
+                    return value, unit
+                if zero_metric is None:
+                    zero_metric = (value, unit)
+        if zero_metric is not None:
+            return zero_metric
         if device.capacity is not None:
             return float(device.capacity), device.capacity_unit
         return None, None
