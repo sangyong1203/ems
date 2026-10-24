@@ -326,8 +326,6 @@ onMounted(() => {
     min-height: 100%;
     min-width: 1180px;
     padding: 10px 12px 14px;
-    overflow-y: auto;
-    overflow-x: hidden;
     color: var(--text-color--primary);
 }
 

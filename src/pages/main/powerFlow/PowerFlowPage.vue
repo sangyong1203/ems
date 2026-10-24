@@ -360,19 +360,20 @@ onBeforeUnmount(() => {
     gap: 14px;
     width: 100%;
     height: 100%;
+    flex-shrink: 0;
     min-width: 1180px;
     min-height: 0;
     padding: 10px 12px 14px;
-    overflow: hidden;
+    overflow: visible;  
     color: var(--text-color--primary);
 }
 
 .power-flow-content {
     z-index: 1;
-    flex: 1 1 auto;
+    flex: 1 0 auto;
     display: flex;
     gap: 14px;
-    min-height: 0;
+    min-height: 738px;
 }
 
 .power-flow-panel--map {
@@ -407,15 +408,17 @@ onBeforeUnmount(() => {
     flex-direction: column;
     gap: 14px;
     min-width: 0;
-    min-height: 0;
+    min-height: 738px;
 }
 
 .power-flow-panel--balance {
     flex: 1;
+    min-height: min-content;
 }
 
 .power-flow-panel--summary {
     height: 320px;
+    flex-shrink: 0;
 }
 .power-flow-balance {
     display: flex;

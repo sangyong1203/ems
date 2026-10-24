@@ -279,7 +279,7 @@ onBeforeUnmount(() => {
     flex: 0 0 calc(32% - 7px);
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 0px;
     min-width: 0;
     min-height: 0;
 }
