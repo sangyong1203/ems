@@ -7,7 +7,7 @@
             <el-header>
                 <slot name="header"></slot>
             </el-header>
-            <el-main>
+            <el-main ref="mainRef">
                 <div class="contents-wrapper">
                     <div class="contents">
                         <slot></slot>
@@ -19,6 +19,13 @@
 </template>
 
 <script lang="ts" setup>
+import { ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import type { MainInstance } from 'element-plus'
+
+const route = useRoute() // 현재 화면 경로
+const mainRef = ref<MainInstance | null>(null) // 공통 본문 스크롤 영역
+
 withDefaults(
     defineProps<{
         collapsed?: boolean
@@ -26,6 +33,15 @@ withDefaults(
     {
         collapsed: false,
     },
+)
+
+// 다른 화면의 렌더링이 끝나면 공통 본문의 세로·가로 스크롤을 초기화합니다.
+watch(
+    () => route.path,
+    () => {
+        mainRef.value?.$el.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+    },
+    { flush: 'post' },
 )
 </script>
 
