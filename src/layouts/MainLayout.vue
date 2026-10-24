@@ -61,6 +61,7 @@ withDefaults(
 
 .right-wrapper {
     min-width: 0;
+    min-height: 0;
     height: 100%;
     display: flex;
     flex: 1;
@@ -69,6 +70,7 @@ withDefaults(
 
 .el-header {
     height: 60px;
+    flex-shrink: 0;
     width: 100%;
     align-items: center;
     padding-left: 32px;
@@ -81,8 +83,11 @@ withDefaults(
 
 .el-main {
     --el-main-padding: 0px;
+    flex: 1;
+    min-height: 0;
     color: var(--text-color--primary);
-    overflow: hidden;
+    scrollbar-gutter: stable;
+    overflow: auto;
 }
 
 .contents-wrapper {
@@ -90,6 +95,7 @@ withDefaults(
     display: flex;
     flex-direction: row;
     height: 100%;
+    min-height: 798px;
     background: transparent;
 }
 
@@ -100,19 +106,24 @@ withDefaults(
     width: 100%;
     display: flex;
     flex-direction: column;
-    scrollbar-gutter: stable;
-    min-height: 800px;
-    overflow: auto;
+    height: 100%;
+    min-height: 798px;
+    overflow: visible;
 }
 
-.contents-wrapper .contents::-webkit-scrollbar {
+.el-main::-webkit-scrollbar {
     width: 8px;
     height: 8px;
 }
 
-.contents-wrapper .contents::-webkit-scrollbar-thumb:hover,
-.contents-wrapper .contents::-webkit-scrollbar-track:hover,
-.contents-wrapper .contents::-webkit-scrollbar-corner:hover {
+.el-main::-webkit-scrollbar-thumb {
+    background-color: var(--overlay-scrollbar-thumb-color);
+    border-radius: 6px;
+}
+
+.el-main::-webkit-scrollbar-thumb:hover,
+.el-main::-webkit-scrollbar-track:hover,
+.el-main::-webkit-scrollbar-corner:hover {
     cursor: pointer;
 }
 </style>
