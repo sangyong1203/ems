@@ -3,7 +3,7 @@
         <MetricCardRow :items="kpiItems" />
 
         <div class="device-management-content">
-            <GlassPanel class="device-panel device-panel--list" title="관리 목록" :value="activeTabValue">
+            <GlassPanel class="device-panel device-panel--list" title="목록" :value="activeTabValue">
                 <div class="device-view-tabs">
                     <button
                         type="button"
@@ -28,7 +28,7 @@
                             placeholder="장비명, 모델명, 위치 검색"
                             width="240px"
                             showSuffixIcon
-                            @on-enter="getDevices"
+                            @on-enter="searchDevices"
                         />
                         <DropdownList
                             v-model="searchParams.deviceType"
@@ -37,7 +37,7 @@
                             :list="deviceTypeFilterOptions"
                             option-label="label"
                             option-value="value"
-                            @on-change="getDevices"
+                            @on-change="searchDevices"
                         />
                         <DropdownList
                             v-model="searchParams.status"
@@ -46,7 +46,7 @@
                             :list="statusFilterOptions"
                             option-label="label"
                             option-value="value"
-                            @on-change="getDevices"
+                            @on-change="searchDevices"
                         />
                     </template>
                     <template v-else>
@@ -55,7 +55,7 @@
                             placeholder="스트링명, 위치, 인버터 검색"
                             width="240px"
                             showSuffixIcon
-                            @on-enter="getPvStrings"
+                            @on-enter="searchPvStrings"
                         />
                         <DropdownList
                             v-model="pvStringSearchParams.status"
@@ -64,7 +64,7 @@
                             :list="statusFilterOptions"
                             option-label="label"
                             option-value="value"
-                            @on-change="getPvStrings"
+                            @on-change="searchPvStrings"
                         />
                         <DropdownList
                             v-model="pvStringSearchParams.connection"
@@ -73,7 +73,7 @@
                             :list="connectionFilterOptions"
                             option-label="label"
                             option-value="value"
-                            @on-change="getPvStrings"
+                            @on-change="searchPvStrings"
                         />
                     </template>
 
@@ -94,7 +94,7 @@
                 <div v-if="activeTab === 'devices'" class="device-table-wrap">
                     <el-table
                         class="device-table"
-                        :data="devices"
+                        :data="pagedDevices"
                         height="100%"
                         highlight-current-row
                         :current-row-key="selectedDevice?.id"
@@ -161,7 +161,7 @@
                 <div v-else class="device-table-wrap">
                     <el-table
                         class="device-table"
-                        :data="pvStrings"
+                        :data="pagedPvStrings"
                         height="100%"
                         highlight-current-row
                         :current-row-key="selectedPvString?.id"
@@ -215,6 +215,15 @@
                         </el-table-column>
                     </el-table>
                 </div>
+                <Pagination
+                    :key="activeTab"
+                    class="device-list-pagination"
+                    :total-row="activeTab === 'devices' ? devices.length : pvStrings.length"
+                    :page="activePagination.page"
+                    :row-size="activePagination.pageSize"
+                    @current-change="changePage"
+                    @size-change="changePageSize"
+                />
             </GlassPanel>
 
             <DeviceDetailPanel v-if="activeTab === 'devices'" :device="selectedDevice" />
@@ -238,6 +247,7 @@ import {
     DropdownList,
     GlassPanel,
     MetricCardRow,
+    Pagination,
     SearchText,
     StatusBadge,
     TableRowActions,
@@ -263,6 +273,17 @@ const isFormDialogOpen = ref(false) // 장비 등록/수정 모달 표시 여부
 const isPvStringFormDialogOpen = ref(false) // PV 스트링 등록/수정 모달 표시 여부
 const updatingActiveDeviceIds = ref(new Set<number>()) // 활성화 상태 변경 중인 장비 ID 셋
 const activeTab = ref<'devices' | 'pvStrings'>('devices') // 활성 탭 (장비 관리 / PV 스트링 관리)
+const devicePagination = reactive({ page: 1, pageSize: 10 }) // 장비 목록 페이지와 표시 개수
+const pvStringPagination = reactive({ page: 1, pageSize: 10 }) // 스트링 목록 페이지와 표시 개수
+const activePagination = computed(() => activeTab.value === 'devices' ? devicePagination : pvStringPagination) // 현재 탭의 페이지 상태
+const pagedDevices = computed(() => { // 현재 페이지에 표시할 장비; 전체 검색 결과는 집계에 유지
+    const start = (devicePagination.page - 1) * devicePagination.pageSize
+    return devices.value.slice(start, start + devicePagination.pageSize)
+})
+const pagedPvStrings = computed(() => { // 현재 페이지에 표시할 스트링
+    const start = (pvStringPagination.page - 1) * pvStringPagination.pageSize
+    return pvStrings.value.slice(start, start + pvStringPagination.pageSize)
+})
 
 const searchParams = reactive({ // 장비 검색 조건
     keyword: '',
@@ -421,12 +442,8 @@ const getDevices = async () => {
     const res = await deviceManagementApi.getList(searchParams)
     if (isSuccessResponse(res.result)) {
         devices.value = res.data.list
-        if (!devices.value.length) {
-            selectedDevice.value = null
-            return
-        }
-        const selectedId = selectedDevice.value?.id
-        selectedDevice.value = devices.value.find(item => item.id === selectedId) ?? devices.value[0]
+        // 삭제나 검색 결과 감소로 현재 페이지가 사라지면 마지막 페이지로 이동합니다.
+        devicePagination.page = Math.min(devicePagination.page, Math.max(1, Math.ceil(devices.value.length / devicePagination.pageSize)))
     }
 }
 
@@ -435,14 +452,42 @@ const getPvStrings = async () => {
     const res = await deviceManagementApi.getPvStrings(pvStringSearchParams)
     if (isSuccessResponse(res.result)) {
         pvStrings.value = res.data.list
-        if (!pvStrings.value.length) {
-            selectedPvString.value = null
-            return
-        }
-        const selectedId = selectedPvString.value?.id
-        selectedPvString.value = pvStrings.value.find(item => item.id === selectedId) ?? pvStrings.value[0]
+        pvStringPagination.page = Math.min(pvStringPagination.page, Math.max(1, Math.ceil(pvStrings.value.length / pvStringPagination.pageSize)))
     }
 }
+
+// 장비 검색 조건을 적용할 때 첫 페이지부터 표시합니다.
+const searchDevices = async () => {
+    devicePagination.page = 1
+    await getDevices()
+}
+
+// 스트링 검색 조건을 적용할 때 첫 페이지부터 표시합니다.
+const searchPvStrings = async () => {
+    pvStringPagination.page = 1
+    await getPvStrings()
+}
+
+// 현재 탭의 페이지를 변경하며 다른 탭의 페이지 상태는 유지합니다.
+const changePage = (page: number) => {
+    activePagination.value.page = page
+}
+
+// 현재 탭의 표시 개수를 변경하고 첫 페이지로 이동합니다.
+const changePageSize = (pageSize: number) => {
+    activePagination.value.pageSize = pageSize
+    activePagination.value.page = 1
+}
+
+// 현재 페이지에서 선택 항목을 유지하고 없으면 첫 장비를 상세 패널에 표시합니다.
+watch(pagedDevices, items => {
+    selectedDevice.value = items.find(item => item.id === selectedDevice.value?.id) ?? items[0] ?? null
+})
+
+// 스트링도 현재 페이지에 있는 항목만 상세 패널에 표시합니다.
+watch(pagedPvStrings, items => {
+    selectedPvString.value = items.find(item => item.id === selectedPvString.value?.id) ?? items[0] ?? null
+})
 
 // getAllPvStrings 인버터 연결용 전체 PV 스트링 목록 조회
 const getAllPvStrings = async () => {
@@ -566,7 +611,7 @@ watch(
     () => searchParams.keyword,
     (keyword, prevKeyword) => {
         if (prevKeyword && !keyword.trim()) {
-            getDevices()
+            searchDevices()
         }
     },
 )
@@ -576,7 +621,7 @@ watch(
     () => pvStringSearchParams.keyword,
     (keyword, prevKeyword) => {
         if (prevKeyword && !keyword.trim()) {
-            getPvStrings()
+            searchPvStrings()
         }
     },
 )
@@ -663,6 +708,11 @@ onMounted(() => {
 .device-table-wrap {
     flex: 1;
     min-height: 0;
+}
+
+.device-list-pagination {
+    flex-shrink: 0;
+    margin: 12px 0 0;
 }
 
 @media (max-width: 1180px), (orientation: portrait) {
