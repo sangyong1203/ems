@@ -912,11 +912,18 @@ const clearSelection = () => {
     selectedJunctionId.value = ''
 }
 
-// 목록 선택 시 흐름도의 선택을 해제하고 장비 상세정보를 표시합니다.
+// 목록에서 선택한 장비가 배치되어 있으면 해당 노드를 강조합니다.
 const selectPaletteDevice = (deviceId: number) => {
     clearSelection()
+    const node = layout.value.nodes.find(item => item.device_id === deviceId)
+    if (node) {
+        selectSingleNode(node.client_id)
+        return
+    }
     selectedPaletteDeviceId.value = deviceId
 }
+
+defineExpose({ selectDevice: selectPaletteDevice })
 
 const handleCanvasClick = () => {
     if (wasCanvasPanning.value) {

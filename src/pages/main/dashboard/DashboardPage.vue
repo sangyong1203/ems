@@ -28,10 +28,13 @@
                             class="dashboard-power-flow-palette"
                             :devices="powerFlowEditorData.devices"
                             :placed-device-ids="dashboardPalettePlacedDeviceIds"
+                            :selected-device-id="selectedFlowDeviceId"
+                            @select-device="powerFlowCanvasRef?.selectDevice($event)"
                             :editable="false"
                         />
                         <!-- <DashboardPowerFlowMap :data="powerFlow" /> -->
                         <PowerFlowCanvas
+                            ref="powerFlowCanvasRef"
                             class="dashboard-flow-canvas"
                             v-if="powerFlowLayout && powerFlowEditorData"
                             :model-value="powerFlowLayout"
@@ -40,6 +43,7 @@
                             :device-telemetry="powerFlowEditorData.device_telemetry"
                             :editable="false"
                             :show-palette="false"
+                            @selection-change="handleFlowSelection"
                         >
                             <template #actions>
                                 <button
@@ -132,7 +136,7 @@ import { EssPowerChart, GlassPanel, TrendAreaChart } from '@/components'
 import PowerFlowCanvas from '@/features/powerFlow/components/PowerFlowCanvas.vue'
 import PowerFlowFullscreenDialog from '@/features/powerFlow/components/PowerFlowFullscreenDialog.vue'
 import PowerFlowPalette from '@/features/powerFlow/components/PowerFlowPalette.vue'
-import type { PowerFlowEditorData, PowerFlowLayout } from '@/features/powerFlow/service/powerFlow.types'
+import type { PowerFlowEditorData, PowerFlowLayout, PowerFlowSelection } from '@/features/powerFlow/service/powerFlow.types'
 import { isSuccessResponse } from '@/utils'
 import DashboardPowerChart from './components/DashboardPowerChart.vue'
 import DashboardKpiSummary from './components/DashboardKpiSummary.vue'
@@ -142,6 +146,14 @@ import type { DashboardPowerFlow, DashboardSummary, DashboardTelemetryPoint } fr
 
 const DEFAULT_REFRESH_INTERVAL = 10000 // 기본 데이터 갱신 주기 (10초)
 const dashboardPalettePlacedDeviceIds: number[] = []
+const powerFlowCanvasRef = ref<InstanceType<typeof PowerFlowCanvas> | null>(null) // 목록 선택을 전달할 흐름도
+const selectedFlowDeviceId = ref<number | null>(null) // 흐름도와 목록에서 강조할 장비 ID
+
+// 흐름도에서 직접 선택하거나 선택을 해제하면 목록의 강조 상태도 동기화합니다.
+const handleFlowSelection = (selection: PowerFlowSelection) => {
+    const node = powerFlowLayout.value?.nodes.find(item => item.client_id === selection.nodeIds[0])
+    selectedFlowDeviceId.value = selection.deviceId ?? node?.device_id ?? null
+}
 
 const isFlowExpanded = ref(false) // 전력 흐름 전체 화면 표시 여부
 const summary = ref<DashboardSummary | null>(null) // 대시보드 요약 지표
