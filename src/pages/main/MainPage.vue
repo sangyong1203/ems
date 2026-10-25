@@ -129,6 +129,7 @@ const logOut = async () => {
 <style scoped lang="scss">
 .main-sidebar {
     height: 100%;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     background: var(--layout-sidebar-bg-color);
@@ -136,6 +137,7 @@ const logOut = async () => {
 
 .side-brand {
     height: 72px;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     gap: 14px;

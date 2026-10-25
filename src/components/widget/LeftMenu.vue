@@ -1,5 +1,9 @@
 <template>
     <div class="menu-bar" :class="[isCollapsed ? 'collapse' : 'not-collapse', { 'is-mobile': mobile }]" ref="leftWrapperRef">
+        <button v-if="hasOverflow" type="button" class="menu-scroll-button" aria-label="메뉴 위로 스크롤" :disabled="!canScrollUp" @click="scrollMenu(-1)">
+            <el-icon><ArrowUp /></el-icon>
+        </button>
+        <div ref="menuViewportRef" class="menu-scroll-viewport" @scroll="updateScrollState">
         <el-menu
             :default-active="defaultMenu"
             mode="vertical"
@@ -68,6 +72,10 @@
                 </template>
             </template>
         </el-menu>
+        </div>
+        <button v-if="hasOverflow" type="button" class="menu-scroll-button" aria-label="메뉴 아래로 스크롤" :disabled="!canScrollDown" @click="scrollMenu(1)">
+            <el-icon><ArrowDown /></el-icon>
+        </button>
         <el-icon
             v-if="!mobile"
             class="collapse-btn"
@@ -93,6 +101,45 @@ const route = useRoute()
 const defaultMenu = computed(() => route.path)
 
 const menu = computed(() => menuStore.getMenu())
+
+const menuViewportRef = ref<HTMLElement | null>(null) // 메뉴 전용 스크롤 영역
+const hasOverflow = ref(false) // 상하 이동 버튼 표시 여부
+const canScrollUp = ref(false) // 위로 이동 가능한 상태
+const canScrollDown = ref(false) // 아래로 이동 가능한 상태
+let menuResizeObserver: ResizeObserver | null = null // 메뉴와 표시 영역 높이 변경 감지
+
+// 현재 스크롤 위치와 메뉴 높이에 맞춰 이동 버튼 상태를 갱신합니다.
+const updateScrollState = () => {
+    const viewport = menuViewportRef.value
+    if (!viewport) return
+    hasOverflow.value = viewport.scrollHeight > viewport.clientHeight + 1
+    canScrollUp.value = viewport.scrollTop > 1
+    canScrollDown.value = viewport.scrollTop + viewport.clientHeight < viewport.scrollHeight - 1
+}
+
+// 표시 영역 높이를 기준으로 메뉴를 부드럽게 위아래로 이동합니다.
+const scrollMenu = (direction: number) => {
+    const viewport = menuViewportRef.value
+    if (!viewport) return
+    viewport.scrollBy({ top: direction * Math.max(56, viewport.clientHeight * 0.7), behavior: 'smooth' })
+}
+
+// 화면 크기와 하위 메뉴 펼침에 따른 스크롤 가능 범위를 동기화합니다.
+onMounted(() => {
+    const viewport = menuViewportRef.value
+    if (!viewport) return
+    menuResizeObserver = new ResizeObserver(updateScrollState)
+    menuResizeObserver.observe(viewport)
+    if (viewport.firstElementChild) {
+        menuResizeObserver.observe(viewport.firstElementChild)
+    }
+    updateScrollState()
+})
+
+// 메뉴가 해제되면 크기 감지를 정리합니다.
+onBeforeUnmount(() => {
+    menuResizeObserver?.disconnect()
+})
 
 const onClickMenu = () => {}
 const onClickCollapseBtn = () => {
@@ -146,7 +193,8 @@ onMounted(() => {
     position: relative;
     display: flex;
     flex-direction: column;
-    height: calc(100% - 84px);
+    flex: 1 1 0;
+    min-height: 0;
     overflow: hidden;
     background: var(--layout-sidebar-bg-color);
     border-right: none;
@@ -166,15 +214,49 @@ onMounted(() => {
 
 .left-menu {
     display: flex;
-    flex: 1;
+    flex: 0 0 auto;
     flex-direction: column;
     gap: 6px;
     width: 100%;
-    height: 100%;
-    overflow: scroll;
+    min-height: 100%;
     background: transparent;
     border: none;
     border-color: transparent;
+}
+
+.menu-scroll-viewport {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+
+.menu-scroll-viewport::-webkit-scrollbar {
+    display: none;
+}
+
+.menu-scroll-button {
+    display: flex;
+    flex: 0 0 32px;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--primary-color);
+    cursor: pointer;
+}
+
+.menu-scroll-button:disabled {
+    opacity: 0.25;
+    cursor: default;
+}
+
+.menu-scroll-button:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: -2px;
 }
 
 .left-menu:not(.el-menu--collapse) {
@@ -199,9 +281,19 @@ onMounted(() => {
 
 :deep(.el-menu-item),
 :deep(.el-sub-menu) {
+    flex-shrink: 0;
     gap: 4px;
     font-size: 15px;
     height: 50px;
+}
+
+:deep(.el-menu-item),
+:deep(.el-sub-menu__title) {
+    min-height: 50px;
+}
+
+:deep(.el-sub-menu) {
+    height: auto;
 }
 
 :deep(.el-menu-item),
@@ -358,9 +450,10 @@ onMounted(() => {
 }
 
 .collapse-btn {
-    position: absolute;
-    right: 16px;
-    bottom: 12px;
+    position: static;
+    flex-shrink: 0;
+    align-self: flex-end;
+    margin: 8px 16px 12px 0;
     display: flex;
     align-items: center;
     justify-content: center;
