@@ -159,6 +159,7 @@ import type {
     PowerFlowJunction,
     PowerFlowLayout,
     PowerFlowPoint,
+    PowerFlowSelection,
     PowerFlowWire as PowerFlowWireType,
 } from '../service/powerFlow.types'
 import {
@@ -211,6 +212,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
     'update:modelValue': [layout: PowerFlowLayout]
+    'selection-change': [selection: PowerFlowSelection]
 }>()
 
 const cloneLayout = (layout: PowerFlowLayout): PowerFlowLayout => JSON.parse(JSON.stringify(layout))
@@ -221,6 +223,20 @@ const viewportSize = ref({ width: 0, height: 0 })
 const selectedNodeIds = ref<string[]>([])
 const selectedWireId = ref('')
 const selectedJunctionId = ref('')
+
+// 선택 변경을 외부 편집 정보 패널과 동기화합니다.
+watch(
+    () => ({
+        nodeIds: [...selectedNodeIds.value],
+        wireId: selectedWireId.value,
+        junctionId: selectedJunctionId.value,
+    }),
+    selection => emit('selection-change', selection),
+    { flush: 'post' },
+)
+
+// 편집 시작·저장·취소 시 이전 선택을 초기화합니다.
+watch(() => props.editable, () => clearSelection())
 const dragState = ref<DragState | null>(null)
 const panState = ref<{ pointerId: number; startX: number; startY: number; scrollLeft: number; scrollTop: number } | null>(null)
 const undoStack = ref<PowerFlowLayout[]>([])

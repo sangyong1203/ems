@@ -1,15 +1,14 @@
 <template>
     <section class="power-flow-page">
-        <MetricCardRow :items="kpiItems" />
-
         <div class="power-flow-content">
             <GlassPanel
                 class="power-flow-panel power-flow-panel--map"
-                title="전력 흐름"
-                subtitle="PV / ESS / 부하 / 계통 실시간 흐름"
+                title="전력 흐름 편집"
+                subtitle="장비 배치 및 연결 구성"
                 subtitle-position="right"
             >
                 <template #headerRight>
+                    <span class="power-flow-edit-mode">{{ isEditMode ? '편집 중' : '보기 모드' }}</span>
                     <button v-if="!isEditMode" type="button" class="power-flow-header-button" @click="startEdit">
                         편집
                     </button>
@@ -32,249 +31,146 @@
                     :device-telemetry="editorData.device_telemetry"
                     :editable="isEditMode"
                     @update:model-value="handleDraftLayoutChange"
+                    @selection-change="selection = $event"
                 />
             </GlassPanel>
 
-            <div class="power-flow-side">
-                <GlassPanel class="power-flow-panel power-flow-panel--summary" title="흐름 요약">
-                    <KeyValueList :items="flowItems" />
-                    <div class="grid-status-chip">
-                        <span>계통 상태</span>
-                        <strong>{{ gridStatusText }}</strong>
-                    </div>
-                </GlassPanel>
-
-                <GlassPanel
-                    class="power-flow-panel power-flow-panel--balance"
-                    title="운전 상태"
-                    :subtitle="operationMode"
-                >
-                    <div class="power-flow-balance">
-                        <div class="power-flow-balance__metric">
-                            <div class="power-flow-balance__metric-head">
-                                <small class="power-flow-progress-label">태양광 직접 소비율</small>
-                                <strong class="power-flow-balance__metric-value">{{ pvDirectUseRate }}%</strong>
-                            </div>
-                            <ProgressGauge class="power-flow-progress" :value="pvDirectUseRate" />
-                        </div>
-                        <div class="power-flow-balance__metric">
-                            <div class="power-flow-balance__metric-head">
-                                <small class="power-flow-progress-label">에너지 자립률</small>
-                                <strong class="power-flow-balance__metric-value">{{ energyIndependenceRate }}%</strong>
-                            </div>
-                            <ProgressGauge class="power-flow-progress" :value="energyIndependenceRate" />
-                        </div>
-                        <div class="power-flow-balance__stats">
-                            <div class="power-flow-balance__stat">
-                                <span class="power-flow-balance__stat-label">SOC</span>
-                                <strong class="power-flow-balance__stat-value">
-                                    {{ formatNumber(powerFlow?.nodes.ess.soc) }}%
-                                </strong>
-                            </div>
-                            <div class="power-flow-balance__stat">
-                                <span class="power-flow-balance__stat-label">SOH</span>
-                                <strong class="power-flow-balance__stat-value">
-                                    {{ formatNumber(powerFlow?.nodes.ess.soh) }}%
-                                </strong>
-                            </div>
-                            <div class="power-flow-balance__stat">
-                                <span class="power-flow-balance__stat-label">배터리 온도</span>
-                                <strong class="power-flow-balance__stat-value">
-                                    {{ formatNumber(powerFlow?.nodes.ess.temperatureC) }}℃
-                                </strong>
-                            </div>
-                            <div class="power-flow-balance__stat power-flow-balance__stat--status">
-                                <span class="power-flow-balance__stat-label">ESS 상태</span>
-                                <StatusBadge :label="essStatusText" :variant="essStatusVariant" min-width="64px" />
-                            </div>
-                        </div>
-                    </div>
-                </GlassPanel>
-            </div>
+            <GlassPanel class="power-flow-side" title="편집 정보">
+                <template #headerRight>
+                    <el-popover
+                        trigger="click"
+                        placement="bottom-end"
+                        title="편집 안내"
+                        :width="320"
+                        :popper-style="{ maxWidth: 'calc(100vw - 24px)' }"
+                    >
+                        <template #reference>
+                            <button type="button" class="editor-info__help" title="편집 안내" aria-label="편집 안내 보기">
+                                <span aria-hidden="true">?</span>
+                            </button>
+                        </template>
+                        <ul class="editor-info__guide">
+                            <li>상단 편집 버튼을 눌러 편집을 시작합니다.</li>
+                            <li>장비 목록에서 장비를 흐름도로 끌어 배치합니다.</li>
+                            <li>배치한 장비를 끌어 위치를 변경합니다.</li>
+                            <li>장비 연결점을 끌어 다른 장비 연결점에 놓으면 연결됩니다.</li>
+                            <li>Ctrl을 누른 채 장비를 선택하면 여러 장비를 선택할 수 있습니다.</li>
+                            <li>선택 도구로 정렬·삭제하고 Ctrl+Z로 되돌립니다.</li>
+                            <li>저장을 누르면 적용되고, 취소하면 저장된 배치로 돌아갑니다.</li>
+                        </ul>
+                    </el-popover>
+                </template>
+                <div class="editor-info">
+                    <section class="editor-info__section">
+                        <h3>배치 현황</h3>
+                        <KeyValueList :items="placementItems" />
+                    </section>
+                    <section class="editor-info__section">
+                        <h3>선택 항목</h3>
+                        <KeyValueList v-if="selectionItems.length" :items="selectionItems" />
+                        <p v-else class="editor-info__empty">장비나 연결선을 선택하면 상세 정보가 표시됩니다.</p>
+                    </section>
+                </div>
+            </GlassPanel>
         </div>
     </section>
 </template>
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { GlassPanel, KeyValueList, MetricCardRow, ProgressGauge, StatusBadge } from '@/components'
+import { GlassPanel, KeyValueList } from '@/components'
 import PowerFlowCanvas from '@/features/powerFlow/components/PowerFlowCanvas.vue'
 import type {
     PowerFlowEditorData,
     PowerFlowLayout,
     PowerFlowLayoutSaveBody,
+    PowerFlowSelection,
+    PowerFlowEndpointType,
 } from '@/features/powerFlow/service/powerFlow.types'
 import { isSuccessResponse } from '@/utils'
 import powerFlowApi from './service/powerFlow.api'
-import type { PowerFlowData } from './service/powerFlow.types'
+import { deviceStatusLabel, deviceVisual } from '@/features/powerFlow/service/powerFlow.utils'
 
 const DEFAULT_REFRESH_INTERVAL = 10000 // 기본 폴링 주기(ms)
 
-const powerFlow = ref<PowerFlowData | null>(null) // 전력 조류 실시간 데이터
 const editorData = ref<PowerFlowEditorData | null>(null) // 다이어그램 레이아웃 편집기 데이터
 const draftLayout = ref<PowerFlowLayout | null>(null) // 편집 중인 임시 레이아웃
 const isEditMode = ref(false) // 다이어그램 편집 모드 여부
 let pollingTimer: number | undefined // 주기적 데이터 갱신 타이머
 
-// formatNumber 숫자 천단위 포맷팅
-const formatNumber = (value?: number) => {
-    return Number(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 1 })
-}
+const selection = ref<PowerFlowSelection>({ nodeIds: [], wireId: '', junctionId: '' }) // 캔버스 선택 항목 ID
 
-// cloneLayout 레이아웃 객체 깊은 복사
+// 저장된 레이아웃과 편집 초안을 분리합니다.
 const cloneLayout = (layout: PowerFlowLayout): PowerFlowLayout => JSON.parse(JSON.stringify(layout))
 
-const essPower = computed(() => {
-    return powerFlow.value?.nodes.ess.chargeKw || powerFlow.value?.nodes.ess.dischargeKw || 0
+// 중복 배치를 제외한 장비 수와 현재 연결 구성을 표시합니다.
+const placementItems = computed(() => {
+    const placedIds = new Set(draftLayout.value?.nodes.map(node => node.device_id) ?? [])
+    return [
+        { label: '배치된 장비', value: `${placedIds.size}대` },
+        { label: '미배치 장비', value: `${editorData.value?.devices.filter(device => !placedIds.has(device.id)).length ?? 0}대` },
+        { label: '연결선', value: `${draftLayout.value?.wires.length ?? 0}개` },
+        { label: '분기점', value: `${draftLayout.value?.junctions.length ?? 0}개` },
+    ]
 })
 
-const updatedAtText = computed(() => {
-    if (!powerFlow.value?.updatedAt) {
-        return 'Updated -'
-    }
-    return `Updated ${powerFlow.value.updatedAt.replace('T', ' ').slice(0, 19)}`
-})
-
-const gridStatusText = computed(() => {
-    return statusLabel(powerFlow.value?.nodes.grid.status)
-})
-
-const operationMode = computed(() => {
-    if (!powerFlow.value) {
-        return '대기'
-    }
-    if (powerFlow.value.nodes.ess.dischargeKw > 0) {
-        return 'ESS 방전으로 부하 공급'
-    }
-    if (powerFlow.value.nodes.grid.importKw > 0) {
-        return '계통 수전으로 부하 공급'
-    }
-    if (powerFlow.value.nodes.ess.chargeKw > 0) {
-        return '태양광 잉여 전력 ESS 충전'
-    }
-    return '자체 공급 운전'
-})
-
-const pvDirectUseRate = computed(() => {
-    const solarPower = powerFlow.value?.nodes.solar.powerKw ?? 0
-    const solarToLoad = powerFlow.value?.flows.solarToLoadKw ?? 0
-    if (solarPower <= 0) {
-        return 0
-    }
-    return Math.min(100, Math.round((solarToLoad / solarPower) * 100))
-})
-
-const energyIndependenceRate = computed(() => {
-    const loadPower = powerFlow.value?.nodes.load.powerKw ?? 0
-    const solarToLoad = powerFlow.value?.flows.solarToLoadKw ?? 0
-    const essToLoad = powerFlow.value?.flows.essToLoadKw ?? 0
-    if (loadPower <= 0) {
-        return 0
-    }
-    return Math.min(100, Math.round(((solarToLoad + essToLoad) / loadPower) * 100))
-})
-
-const essStatusText = computed(() => {
-    return statusLabel(powerFlow.value?.nodes.ess.status)
-})
-
-const essStatusVariant = computed(() => {
-    const status = powerFlow.value?.nodes.ess.status
-    if (status === 'CHARGING') {
-        return 'progress'
-    }
-    if (status === 'DISCHARGING') {
-        return 'info'
-    }
-    if (status === 'STANDBY' || status === 'IDLE') {
-        return 'muted'
-    }
-    return 'muted'
-})
-
-const kpiItems = computed(() => [
-    {
-        label: '태양광 발전',
-        value: formatNumber(powerFlow.value?.nodes.solar.powerKw),
-        unit: 'kW',
-        hint: statusLabel(powerFlow.value?.nodes.solar.status),
-        variant: 'is-solar',
-    },
-    {
-        label: 'ESS 전력',
-        value: formatNumber(essPower.value),
-        unit: 'kW',
-        hint: `${statusLabel(powerFlow.value?.nodes.ess.status)} / SOC ${formatNumber(powerFlow.value?.nodes.ess.soc)}%`,
-        variant: 'is-ess',
-    },
-    {
-        label: '부하 전력',
-        value: formatNumber(powerFlow.value?.nodes.load.powerKw),
-        unit: 'kW',
-        hint: '현재 사용',
-        variant: 'is-load',
-    },
-    {
-        label: '계통 전력',
-        value: formatNumber(powerFlow.value?.nodes.grid.exportKw || powerFlow.value?.nodes.grid.importKw),
-        unit: 'kW',
-        hint: gridStatusText.value,
-        variant: 'is-grid',
-    },
-    {
-        label: '태양광 직접 소비율',
-        value: String(pvDirectUseRate.value),
-        unit: '%',
-        hint: 'PV → 부하 / PV 발전',
-        variant: 'is-rate',
-    },
-])
-
-const flowItems = computed(() => [
-    { label: 'PV → 부하', value: `${formatNumber(powerFlow.value?.flows.solarToLoadKw)} kW` },
-    { label: 'PV → ESS', value: `${formatNumber(powerFlow.value?.flows.solarToEssKw)} kW` },
-    { label: 'ESS → 부하', value: `${formatNumber(powerFlow.value?.flows.essToLoadKw)} kW` },
-    { label: '계통 → 부하', value: `${formatNumber(powerFlow.value?.flows.gridImportKw)} kW` },
-    { label: 'PV → 계통', value: `${formatNumber(powerFlow.value?.flows.solarToGridKw)} kW` },
-    { label: 'ESS → 계통', value: `${formatNumber(powerFlow.value?.flows.essToGridKw)} kW` },
-])
-
-// statusLabel 상태 코드 한국어 라벨 반환
-const statusLabel = (status?: string) => {
-    if (status === 'GENERATING') {
-        return '발전 중'
-    }
-    if (status === 'CONSUMING') {
-        return '사용 중'
-    }
-    if (status === 'CHARGING') {
-        return '충전'
-    }
-    if (status === 'DISCHARGING') {
-        return '방전'
-    }
-    if (status === 'IMPORT') {
-        return '수전'
-    }
-    if (status === 'EXPORT') {
-        return '송전'
-    }
-    if (status === 'BALANCED') {
-        return '균형'
-    }
-    if (status === 'IDLE' || status === 'STANDBY') {
-        return '대기'
-    }
-    return status || '-'
+// 연결 끝점에 대응하는 장비명 또는 분기점을 표시합니다.
+const endpointLabel = (type: PowerFlowEndpointType, refId: string) => {
+    if (type === 'JUNCTION') return '분기점'
+    const node = draftLayout.value?.nodes.find(item => item.client_id === refId)
+    return editorData.value?.devices.find(device => device.id === node?.device_id)?.name ?? '장비 없음'
 }
 
-// getPowerFlow 실시간 전력 조류 데이터 조회
-const getPowerFlow = async () => {
-    const res = await powerFlowApi.getPowerFlow()
-    if (isSuccessResponse(res.result)) {
-        powerFlow.value = res.data
+// 선택 상태를 현재 초안과 대조하여 삭제·취소 후에도 유효한 정보만 표시합니다.
+const selectionItems = computed(() => {
+    const layout = draftLayout.value
+    if (!layout) return []
+    const wire = layout.wires.find(item => item.client_id === selection.value.wireId)
+    if (wire) {
+        return [
+            { label: '선택 종류', value: '연결선' },
+            { label: '시작', value: endpointLabel(wire.source_type, wire.source_ref) },
+            { label: '끝', value: endpointLabel(wire.target_type, wire.target_ref) },
+            { label: '활성 여부', value: wire.is_enabled ? '활성' : '비활성' },
+        ]
     }
-}
+    const nodes = layout.nodes.filter(node => selection.value.nodeIds.includes(node.client_id))
+    if (nodes.length > 1) return [{ label: '선택 장비', value: `${nodes.length}대` }]
+    if (nodes.length === 1) {
+        const node = nodes[0]
+        const device = editorData.value?.devices.find(item => item.id === node?.device_id)
+        if (device && node) {
+            const items = [
+                { label: '장비 ID', value: String(device.id) },
+                { label: '장비 이름', value: device.name },
+                { label: '장비 종류', value: deviceVisual(device.device_type).label },
+                { label: '장비 상태', value: deviceStatusLabel(device) },
+                { label: '사용 여부', value: device.is_active ? '사용' : '미사용' },
+                {
+                    label: '측정값',
+                    value: device.display_value == null
+                        ? '-'
+                        : `${device.display_value.toLocaleString(undefined, { maximumFractionDigits: 1 })} ${device.display_unit ?? ''}`.trim(),
+                },
+                {
+                    label: '연결선 수',
+                    value: `${layout.wires.filter(item =>
+                        (item.source_type === 'NODE' && item.source_ref === node.client_id) ||
+                        (item.target_type === 'NODE' && item.target_ref === node.client_id),
+                    ).length}개`,
+                },
+            ]
+            if (device.device_type === 'INVERTER' && device.module_count != null) {
+                items.push({ label: '모듈 수', value: `${device.module_count.toLocaleString()}장` })
+            }
+            return items
+        }
+    }
+    if (layout.junctions.some(item => item.client_id === selection.value.junctionId)) {
+        return [{ label: '선택 종류', value: '분기점' }]
+    }
+    return []
+})
 
 // getEditor 다이어그램 레이아웃 데이터 조회
 const getEditor = async (syncDraftLayout = true) => {
@@ -330,18 +226,17 @@ const saveEdit = async () => {
     }
 }
 
-// startPolling 주기적 전력 조류 데이터 갱신 시작
+// 편집 초안을 유지하면서 장비 목록과 실시간 표시 데이터를 갱신합니다.
 const startPolling = (interval: number) => {
     pollingTimer = window.setInterval(() => {
-        getPowerFlow()
         getEditor(false)
     }, interval)
 }
 
 // onMounted 초기 데이터 로드 및 폴링 시작
 onMounted(async () => {
-    await Promise.all([getPowerFlow(), getEditor()])
-    startPolling(powerFlow.value?.refreshInterval ?? DEFAULT_REFRESH_INTERVAL)
+    await getEditor()
+    startPolling(DEFAULT_REFRESH_INTERVAL)
 })
 
 // onBeforeUnmount 컴포넌트 해제 시 폴링 타이머 정리
@@ -403,177 +298,139 @@ onBeforeUnmount(() => {
 }
 
 .power-flow-side {
-    flex: 0 0 19.3%;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
+    flex: 0 0 300px;
     min-width: 0;
-    min-height: 738px;
 }
 
-.power-flow-panel--balance {
-    flex: 1;
-    min-height: min-content;
-}
-
-.power-flow-panel--summary {
-    height: 320px;
-    flex-shrink: 0;
-}
-.power-flow-balance {
+.editor-info {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 24px;
 }
 
-.power-flow-balance__metric {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+.editor-info__section h3 {
+    margin: 0 0 12px;
+    font-size: 15px;
 }
 
-.power-flow-balance__metric-head {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 12px;
+.editor-info__section :deep(.key-value-list),
+.editor-info__section {
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
-.power-flow-balance__metric-value {
-    color: var(--secondary-color);
-    font-size: 18px;
-    font-weight: 800;
-    line-height: 1;
-}
-
-.power-flow-balance__stats {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-    padding-top: 4px;
-}
-
-.power-flow-balance__stat {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 12px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.power-flow-balance__stat--status {
-    justify-content: space-between;
-    align-items: flex-start;
-}
-
-.power-flow-balance__stat-label {
+.editor-info__empty,
+.editor-info__guide {
+    margin: 0;
     color: var(--text-color--secondary);
+    font-size: 13px;
+    line-height: 1.8;
+}
+
+.editor-info__guide {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-left: 18px;
+}
+
+.power-flow-edit-mode {
+    color: var(--secondary-color);
+    font-size: 14px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.editor-info__help {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    color: var(--text-color--secondary);
+    background: transparent;
+    cursor: pointer;
+}
+
+.editor-info__help span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border: 1px solid currentColor;
+    border-radius: 50%;
     font-size: 12px;
     font-weight: 700;
 }
 
-.power-flow-balance__stat-value {
-    color: var(--text-color--primary);
-    font-size: 18px;
-    font-weight: 800;
-    line-height: 1.1;
+.editor-info__help:hover {
+    color: var(--primary-color);
 }
 
-.grid-status-chip {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-top: 16px;
+.editor-info__help:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: -2px;
 }
 
-.grid-status-chip span {
-    color: var(--text-color--secondary);
-    font-size: 14px;
-    font-weight: 700;
+.editor-info__guide li + li {
+    margin-top: 8px;
 }
 
-.grid-status-chip strong {
-    color: var(--secondary-color);
-    font-size: 16px;
-    font-weight: 800;
-}
-
-.power-flow-progress {
-    margin-bottom: 0;
-}
-
-.power-flow-progress :deep(.progress-gauge) {
-    gap: 0;
-}
-
-.power-flow-progress-label {
-    display: block;
-    margin-bottom: 0;
-    color: var(--text-color--secondary);
-    font-size: 14px;
-    font-weight: 700;
-    margin-top: 0;
-}
-
-@media (max-width: 1180px), (orientation: portrait) {
+@media (max-width: 1180px) {
     .power-flow-page {
         min-width: 0;
-        overflow: auto;
+        height: auto;
     }
 
     .power-flow-content {
         flex: 0 0 auto;
         flex-direction: column;
-        min-height: auto;
+        min-height: 0;
     }
 
     .power-flow-panel--map {
         flex: 0 0 auto;
-        min-height: 560px;
+        height: 600px;
     }
 
     .power-flow-side {
         flex: 0 0 auto;
-        flex-direction: row;
-        width: 100%;
     }
 
-    .power-flow-panel--summary,
-    .power-flow-panel--balance {
-        flex: 1 1 0;
-        min-height: 300px;
+    .editor-info {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .power-flow-balance {
-        gap: 16px;
-    }
-
-    .power-flow-balance__stats {
-        grid-template-columns: 1fr;
-    }
 }
 
-@media (max-width: 760px), (orientation: portrait) and (max-width: 900px) {
+@media (max-width: 767px) {
+    .power-flow-page {
+        padding: 8px;
+    }
+
     .power-flow-panel--map {
-        min-height: 440px;
-    }
-
-    .power-flow-side {
-        flex-direction: column;
-    }
-
-    .power-flow-panel--summary,
-    .power-flow-panel--balance {
-        flex-basis: auto;
-        min-height: 280px;
+        height: 500px;
+        padding: 14px;
     }
 
     .power-flow-panel--map :deep(.glass-panel__header) {
-        align-items: flex-start;
+        flex-wrap: wrap;
         gap: 10px;
+    }
+
+    .power-flow-panel--map :deep(.glass-panel__heading) {
+        flex-wrap: wrap;
+    }
+
+    .power-flow-panel--map :deep(.glass-panel__heading span) {
+        white-space: normal;
+    }
+
+    .editor-info {
+        grid-template-columns: minmax(0, 1fr);
     }
 }
 </style>

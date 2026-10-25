@@ -101,7 +101,7 @@ const tempMenu = [
     {
         id: 40,
         parentId: 1,
-        title: '전력 흐름',
+        title: '전력 흐름 편집',
         path: '/power-flow',
         icon: 'IconPowerFlow',
         useYn: 'Y',
