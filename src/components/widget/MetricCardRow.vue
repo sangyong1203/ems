@@ -91,4 +91,28 @@ defineProps<{
         min-width: 280px;
     }
 }
+
+@media (max-width: 767px) {
+    .metric-card-row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .metric-card {
+        min-width: 0;
+        padding: 14px 12px;
+        overflow-wrap: anywhere;
+    }
+
+    .metric-card__top {
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    .metric-card__value {
+        font-size: 24px;
+        line-height: 30px;
+    }
+}
 </style>

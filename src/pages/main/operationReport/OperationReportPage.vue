@@ -517,28 +517,6 @@ onMounted(() => {
         padding: 8px;
     }
 
-    .operation-report-page :deep(.metric-card-row) {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 10px;
-    }
-
-    .operation-report-page :deep(.metric-card) {
-        min-width: 0;
-        padding: 14px 12px;
-        overflow-wrap: anywhere;
-    }
-
-    .operation-report-page :deep(.metric-card__top) {
-        flex-wrap: wrap;
-        gap: 4px;
-    }
-
-    .operation-report-page :deep(.metric-card__value) {
-        font-size: 24px;
-        line-height: 30px;
-    }
-
     .operation-report-panel {
         padding: 14px;
     }
