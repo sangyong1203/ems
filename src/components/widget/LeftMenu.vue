@@ -1,10 +1,10 @@
 <template>
-    <div class="menu-bar" :class="appStore.isSidebarCollapsed ? 'collapse' : 'not-collapse'" ref="leftWrapperRef">
+    <div class="menu-bar" :class="[isCollapsed ? 'collapse' : 'not-collapse', { 'is-mobile': mobile }]" ref="leftWrapperRef">
         <el-menu
             :default-active="defaultMenu"
             mode="vertical"
             class="left-menu"
-            :collapse="appStore.isSidebarCollapsed"
+            :collapse="isCollapsed"
             :collapse-transition="false"
             :unique-opened="true"
             :router="true"
@@ -69,9 +69,10 @@
             </template>
         </el-menu>
         <el-icon
+            v-if="!mobile"
             class="collapse-btn"
             @click="onClickCollapseBtn"
-            :class="appStore.isSidebarCollapsed ? 'btn-collapse' : 'btn-expand'"
+            :class="isCollapsed ? 'btn-collapse' : 'btn-expand'"
         >
             <ArrowLeft />
         </el-icon>
@@ -84,8 +85,10 @@ import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app.store'
 import { useMenuStore } from '@/stores/menu.store'
 
+const props = withDefaults(defineProps<{ mobile?: boolean }>(), { mobile: false }) // 모바일 메뉴에서는 이름까지 펼쳐 표시
 const menuStore = useMenuStore()
 const appStore = useAppStore()
+const isCollapsed = computed(() => !props.mobile && appStore.isSidebarCollapsed) // 실제 메뉴 접힘 여부
 const route = useRoute()
 const defaultMenu = computed(() => route.path)
 
@@ -109,6 +112,7 @@ const handleSelect = (path: any) => {
 
 const leftWrapperRef = ref<HTMLElement | null>(null)
 const handleClickOutside = (event: MouseEvent) => {
+    if (props.mobile) return
     if (leftWrapperRef.value && !leftWrapperRef.value.contains(event.target as Node)) {
         if (appStore.isSidebarCollapsed === false) {
             setCollapse()
@@ -422,5 +426,13 @@ onMounted(() => {
     to {
         width: 320px;
     }
+}
+.menu-bar.is-mobile {
+    width: 100%;
+    animation: none;
+}
+
+.menu-bar.is-mobile :deep(.el-sub-menu__title) {
+    width: 100%;
 }
 </style>

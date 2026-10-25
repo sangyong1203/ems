@@ -17,6 +17,7 @@
                 @pointermove="handlePointerMove"
                 @pointerup="handleCanvasPointerUp"
                 @pointerleave="handleCanvasPointerUp"
+                @pointercancel="handleCanvasPointerUp"
                 @click="handleCanvasClick"
             >
                 <div class="power-flow-canvas__viewport" :style="viewportStyle">
@@ -65,6 +66,10 @@
                         ></button>
                     </div>
                 </div>
+            </div>
+
+            <div v-if="$slots.actions" class="power-flow-canvas__actions">
+                <slot name="actions"></slot>
             </div>
 
             <div class="power-flow-canvas__zoom">
@@ -783,7 +788,9 @@ const handlePointerMove = (event: PointerEvent) => {
 
 const handleCanvasPointerUp = () => {
     if (panState.value && scrollRef.value) {
-        scrollRef.value.releasePointerCapture(panState.value.pointerId)
+        if (scrollRef.value.hasPointerCapture(panState.value.pointerId)) {
+            scrollRef.value.releasePointerCapture(panState.value.pointerId)
+        }
         panState.value = null
     }
     if (dragState.value) {
@@ -1237,6 +1244,13 @@ onBeforeUnmount(() => {
 
 .power-flow-canvas__undo + .power-flow-canvas__toolbar {
     right: 50px;
+}
+
+.power-flow-canvas__actions {
+    position: absolute;
+    z-index: 10;
+    top: 12px;
+    right: 12px;
 }
 
 .power-flow-canvas__zoom {

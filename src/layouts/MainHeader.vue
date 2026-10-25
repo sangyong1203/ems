@@ -1,20 +1,28 @@
 <template>
     <el-row class="main-header">
-        <el-col :span="14">
+        <el-col :span="14" class="header-title-column">
             <div class="header-left">
+                <button
+                    type="button"
+                    class="mobile-menu-button"
+                    aria-label="메뉴 열기"
+                    :aria-expanded="mobileMenuOpen"
+                    @click.stop="emit('toggle-menu')"
+                ><el-icon><Menu /></el-icon></button>
                 <AppIcon v-if="icon" :name="icon" class="menu-icon"></AppIcon>
                 <span class="title">
                     <span class="title-text">{{ title }}</span>
                 </span>
             </div>
         </el-col>
-        <el-col :span="10">
+        <el-col :span="10" class="header-actions-column">
             <div class="header-right">
                 <el-popover
                     v-model:visible="userPopoverVisible"
                     placement="bottom-end"
                     trigger="click"
                     :width="320"
+                    :popper-style="{ maxWidth: 'calc(100vw - 24px)' }"
                     @show="loadUserInfo"
                 >
                     <template #reference>
@@ -49,6 +57,7 @@
                         </dl>
                         <div class="header-user-profile__actions">
                             <el-button class="change-password-button" @click="openChangePassword">Change password</el-button>
+                            <el-button class="header-profile-logout" @click="userPopoverVisible = false; emit('logout')">로그아웃</el-button>
                         </div>
                     </section>
                 </el-popover>
@@ -62,7 +71,7 @@
 
 <script lang="ts" setup>
 import { ref } from 'vue'
-import { ArrowDown, SwitchButton, User } from '@element-plus/icons-vue'
+import { ArrowDown, Menu, SwitchButton, User } from '@element-plus/icons-vue'
 import loginApi from '@/pages/login/service/login.api'
 import type { UserInfo } from '@/pages/login/service/login.types'
 
@@ -76,15 +85,18 @@ withDefaults(
         title?: string
         icon?: string
         userName?: string
+        mobileMenuOpen?: boolean // 모바일 메뉴 표시 여부
     }>(),
     {
         title: '',
         icon: '',
         userName: 'User',
+        mobileMenuOpen: false,
     },
 )
 
 const emit = defineEmits<{
+    'toggle-menu': []
     logout: []
     'change-password': []
 }>()
@@ -279,5 +291,68 @@ const openChangePassword = () => {
     width: 24px;
     height: 24px;
     margin-right: 8px;
+}
+.mobile-menu-button,
+.header-profile-logout {
+    display: none;
+}
+
+@media (max-width: 767px) {
+    .header-title-column {
+        flex: 1;
+        min-width: 0;
+        max-width: calc(100% - 52px);
+    }
+
+    .header-actions-column {
+        flex: 0 0 44px;
+        max-width: 44px;
+    }
+
+    .header-left,
+    .header-left .title {
+        min-width: 0;
+    }
+
+    .mobile-menu-button {
+        display: inline-flex;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        border: none;
+        background: transparent;
+        color: var(--text-color--primary);
+        font-size: 22px;
+        cursor: pointer;
+    }
+
+    .header-left .title-text {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 17px;
+    }
+
+    .menu-icon,
+    .header-user-name,
+    .header-user-arrow,
+    .logout {
+        display: none;
+    }
+
+    .header-user {
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        padding: 0;
+    }
+
+    .header-profile-logout {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+        margin: 8px 0 0;
+    }
 }
 </style>

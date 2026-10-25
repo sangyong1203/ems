@@ -196,4 +196,25 @@ defineProps<{
     min-height: 154px;
     height: calc(100% - 22px);
 }
+@media (max-width: 1180px) {
+    .dashboard-kpi-summary__section {
+        min-width: 0;
+    }
+
+    .dashboard-kpi-summary__section--inverter :deep(.donut-status-chart) {
+        height: auto;
+    }
+}
+
+@media (max-width: 767px) {
+    .dashboard-kpi-summary__section + .dashboard-kpi-summary__section {
+        padding-top: 20px;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .dashboard-kpi-summary__section--inverter :deep(.donut-status-chart) {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+}
 </style>

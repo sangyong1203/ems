@@ -1,19 +1,21 @@
 <template>
     <MainLayout :collapsed="appStore.isSidebarCollapsed">
-        <template #sidebar>
-            <div class="main-sidebar" :class="appStore.isSidebarCollapsed ? 'is-collapse' : 'is-expand'">
+        <template #sidebar="{ mobile }">
+            <div class="main-sidebar" :class="!mobile && appStore.isSidebarCollapsed ? 'is-collapse' : 'is-expand'">
                 <div class="side-brand" @click="toDashboard">
                     <span class="side-title">Solar ESS EMS</span>
                 </div>
-                <LeftMenu />
+                <LeftMenu :mobile="mobile" />
             </div>
         </template>
 
-        <template #header>
+        <template #header="{ mobileMenuOpen, toggleMobileMenu }">
             <MainHeader
                 :title="currentMenuItem.title"
                 :icon="currentMenuItem.icon"
                 :user-name="userDisplayName"
+                :mobile-menu-open="mobileMenuOpen"
+                @toggle-menu="toggleMobileMenu"
                 @logout="logOut"
                 @change-password="changePasswordRef?.openDialog()"
             />

@@ -1,11 +1,22 @@
 <template>
     <el-container class="layout-shell">
-        <aside class="left-wrapper" :class="collapsed ? 'is-collapse' : 'is-expand'">
-            <slot name="sidebar"></slot>
+        <aside v-if="!isMobile" class="left-wrapper" :class="collapsed ? 'is-collapse' : 'is-expand'">
+            <slot name="sidebar" :mobile="false"></slot>
         </aside>
+        <el-drawer
+            v-if="isMobile"
+            v-model="mobileMenuOpen"
+            title="메뉴"
+            direction="ltr"
+            size="min(320px, 88vw)"
+            class="mobile-navigation-drawer"
+            append-to-body
+        >
+            <slot name="sidebar" :mobile="true"></slot>
+        </el-drawer>
         <el-container class="right-wrapper">
             <el-header>
-                <slot name="header"></slot>
+                <slot name="header" :mobile-menu-open="mobileMenuOpen" :toggle-mobile-menu="toggleMobileMenu"></slot>
             </el-header>
             <el-main ref="mainRef">
                 <div class="contents-wrapper">
@@ -19,9 +30,30 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch } from 'vue'
+import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import type { MainInstance } from 'element-plus'
+
+const mobileMedia = window.matchMedia('(max-width: 767px)') // 공통 모바일 메뉴 적용 구간
+const isMobile = ref(mobileMedia.matches) // 모바일 화면 여부
+const mobileMenuOpen = ref(false) // 모바일 오버레이 메뉴 표시 여부
+
+// 모바일 메뉴는 데스크톱 사이드바의 접힘 상태와 독립적으로 열고 닫습니다.
+const toggleMobileMenu = () => {
+    mobileMenuOpen.value = !mobileMenuOpen.value
+}
+
+// 화면 구간 전환 시 메뉴를 닫아 데스크톱과 모바일 상태가 섞이지 않도록 합니다.
+const syncMobileViewport = () => {
+    isMobile.value = mobileMedia.matches
+    mobileMenuOpen.value = false
+}
+
+// 모바일 구간 변경 감지를 등록합니다.
+onMounted(() => mobileMedia.addEventListener('change', syncMobileViewport))
+
+// 레이아웃 해제 시 화면 구간 감지를 해제합니다.
+onBeforeUnmount(() => mobileMedia.removeEventListener('change', syncMobileViewport))
 
 const route = useRoute() // 현재 화면 경로
 const mainRef = ref<MainInstance | null>(null) // 공통 본문 스크롤 영역
@@ -39,6 +71,7 @@ withDefaults(
 watch(
     () => route.path,
     () => {
+        mobileMenuOpen.value = false
         mainRef.value?.$el.scrollTo({ top: 0, left: 0, behavior: 'instant' })
     },
     { flush: 'post' },
@@ -141,5 +174,35 @@ watch(
 .el-main::-webkit-scrollbar-track:hover,
 .el-main::-webkit-scrollbar-corner:hover {
     cursor: pointer;
+}
+@media (max-width: 767px) {
+    .layout-shell {
+        height: 100dvh;
+    }
+
+    .el-header {
+        height: 56px;
+        padding: 0 10px;
+    }
+
+    .contents-wrapper,
+    .contents-wrapper .contents {
+        height: auto;
+        min-height: 100%;
+    }
+
+    .contents-wrapper .contents {
+        min-width: 0;
+        padding: 0 0 16px;
+    }
+
+    .el-main {
+        scrollbar-gutter: auto;
+    }
+}
+
+:global(.mobile-navigation-drawer .el-drawer__body) {
+    padding: 0;
+    overflow: hidden;
 }
 </style>

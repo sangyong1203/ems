@@ -32,6 +32,7 @@
                         />
                         <!-- <DashboardPowerFlowMap :data="powerFlow" /> -->
                         <PowerFlowCanvas
+                            class="dashboard-flow-canvas"
                             v-if="powerFlowLayout && powerFlowEditorData"
                             :model-value="powerFlowLayout"
                             :devices="powerFlowEditorData.devices"
@@ -39,7 +40,19 @@
                             :device-telemetry="powerFlowEditorData.device_telemetry"
                             :editable="false"
                             :show-palette="false"
-                        />
+                        >
+                            <template #actions>
+                                <button
+                                    type="button"
+                                    class="dashboard-flow-expand-button"
+                                    title="전체 화면으로 펼치기"
+                                    aria-label="전체 화면으로 펼치기"
+                                    @click.stop="isFlowExpanded = true"
+                                >
+                                    <el-icon><FullScreen /></el-icon>
+                                </button>
+                            </template>
+                        </PowerFlowCanvas>
                     </GlassPanel>
                 </div>
 
@@ -106,12 +119,18 @@
             />
         </div>
     </section>
+    <PowerFlowFullscreenDialog
+        v-model="isFlowExpanded"
+        :layout="powerFlowLayout"
+        :editor-data="powerFlowEditorData"
+    />
 </template>
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { EssPowerChart, GlassPanel, TrendAreaChart } from '@/components'
 import PowerFlowCanvas from '@/features/powerFlow/components/PowerFlowCanvas.vue'
+import PowerFlowFullscreenDialog from '@/features/powerFlow/components/PowerFlowFullscreenDialog.vue'
 import PowerFlowPalette from '@/features/powerFlow/components/PowerFlowPalette.vue'
 import type { PowerFlowEditorData, PowerFlowLayout } from '@/features/powerFlow/service/powerFlow.types'
 import { isSuccessResponse } from '@/utils'
@@ -124,6 +143,7 @@ import type { DashboardPowerFlow, DashboardSummary, DashboardTelemetryPoint } fr
 const DEFAULT_REFRESH_INTERVAL = 10000 // 기본 데이터 갱신 주기 (10초)
 const dashboardPalettePlacedDeviceIds: number[] = []
 
+const isFlowExpanded = ref(false) // 전력 흐름 전체 화면 표시 여부
 const summary = ref<DashboardSummary | null>(null) // 대시보드 요약 지표
 const powerFlow = ref<DashboardPowerFlow | null>(null) // 실시간 전력 흐름 데이터
 const powerFlowEditorData = ref<PowerFlowEditorData | null>(null) // 전력 흐름 편집 데이터
@@ -437,17 +457,37 @@ onBeforeUnmount(() => {
     justify-content: space-around !important;
 }
 
-@media (max-width: 1180px), (orientation: portrait) {
+.dashboard-flow-expand-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--text-color--primary);
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.dashboard-flow-expand-button:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: -2px;
+}
+
+
+@media (max-width: 1180px) {
     .dashboard-page {
         min-width: 0;
-        overflow: auto;
-        margin-bottom: 40px;
+        height: auto;
+        overflow: visible;
     }
 
     .dashboard-content {
         display: flex;
         flex-direction: column;
-        min-height: auto;
+        min-height: 0;
     }
 
     .dashboard-main {
@@ -456,47 +496,100 @@ onBeforeUnmount(() => {
 
     .dashboard-power-flow-row {
         flex: 0 0 auto;
-        min-height: 430px;
+        height: 440px;
+        min-height: 440px;
     }
 
     .dashboard-chart-row {
-        flex: 0 0 auto;
-        flex-wrap: wrap;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         height: auto;
     }
 
     .dashboard-panel--chart,
     .dashboard-panel--ess-chart,
     .dashboard-panel--grid-chart {
-        flex: 1 1 calc(50% - 7px);
-        min-height: 300px;
+        height: 320px;
+        min-height: 320px;
+    }
+
+    .dashboard-panel--ess-chart {
+        grid-column: 1 / -1;
     }
 
     .dashboard-panel--kpi :deep(.glass-panel__body) {
-        display: flex;
-        flex-direction: row;
-        justify-content: space-between;
-        gap: 48px;
-        section {
-            flex: 1;
-        }
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 24px;
     }
 }
 
-@media (max-width: 760px), (orientation: portrait) and (max-width: 900px) {
+@media (max-width: 767px) {
+    .dashboard-page {
+        padding: 8px;
+    }
+
     .dashboard-power-flow-row {
-        min-height: 380px;
+        height: 400px;
+        min-height: 400px;
+    }
+
+    .dashboard-power-flow-palette {
+        display: none;
+    }
+
+    .dashboard-panel--power-flow :deep(.glass-panel__body) {
+        flex-direction: column;
     }
 
     .dashboard-chart-row {
-        flex-direction: column;
+        grid-template-columns: minmax(0, 1fr);
     }
 
     .dashboard-panel--chart,
     .dashboard-panel--ess-chart,
     .dashboard-panel--grid-chart {
-        flex-basis: auto;
-        min-height: 280px;
+        height: 300px;
+        min-height: 300px;
+    }
+
+    .dashboard-panel--power-flow,
+    .dashboard-panel--chart,
+    .dashboard-panel--ess-chart,
+    .dashboard-panel--grid-chart,
+    .dashboard-panel--kpi {
+        padding: 14px;
+    }
+
+    .dashboard-page :deep(.glass-panel__header),
+    .dashboard-page :deep(.glass-panel__heading--right) {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .dashboard-page :deep(.glass-panel__header h2) {
+        font-size: 16px;
+    }
+
+    .dashboard-page :deep(.glass-panel__header strong),
+    .dashboard-page :deep(.glass-panel__heading--right span) {
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .dashboard-panel--kpi :deep(.glass-panel__body) {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    .dashboard-flow-canvas :deep(.power-flow-canvas__scroller) {
+        touch-action: none;
+    }
+
+    .dashboard-flow-canvas :deep(.power-flow-canvas__zoom button) {
+        min-width: 44px;
+        min-height: 44px;
     }
 }
 </style>
