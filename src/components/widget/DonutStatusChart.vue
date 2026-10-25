@@ -142,7 +142,7 @@ onBeforeUnmount(() => {
 }
 
 .donut-status-chart.is-horizontal {
-    flex: 0 0 45%;
+    flex: 1 1 40%;
     align-items: center;
     justify-content: center;
     gap: 22px;

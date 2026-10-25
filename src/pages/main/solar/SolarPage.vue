@@ -279,6 +279,7 @@ onBeforeUnmount(() => {
 
 .solar-panel--status {
     flex: 0 0 38%;
+    min-height: 260px;
 }
 
 .solar-panel--inverters {
