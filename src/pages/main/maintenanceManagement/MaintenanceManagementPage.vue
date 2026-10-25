@@ -14,7 +14,7 @@
                         placeholder="장비명, 제목, 담당자 검색"
                         width="250px"
                         showSuffixIcon
-                        @on-enter="getMaintenanceList"
+                        @on-enter="searchMaintenance"
                     />
                     <DropdownList
                         v-model="searchParams.deviceId"
@@ -23,7 +23,7 @@
                         :list="deviceFilterOptions"
                         option-label="label"
                         option-value="value"
-                        @on-change="getMaintenanceList"
+                        @on-change="searchMaintenance"
                     />
                     <DropdownList
                         v-model="searchParams.maintenanceType"
@@ -32,7 +32,7 @@
                         :list="maintenanceTypeFilterOptions"
                         option-label="label"
                         option-value="value"
-                        @on-change="getMaintenanceList"
+                        @on-change="searchMaintenance"
                     />
                     <DropdownList
                         v-model="searchParams.status"
@@ -41,7 +41,7 @@
                         :list="statusFilterOptions"
                         option-label="label"
                         option-value="value"
-                        @on-change="getMaintenanceList"
+                        @on-change="searchMaintenance"
                     />
                     <el-date-picker
                         v-model="dateRange"
@@ -63,7 +63,7 @@
                 <div class="maintenance-table-wrap">
                     <el-table
                         class="maintenance-table"
-                        :data="maintenanceList"
+                        :data="pagedMaintenance"
                         height="100%"
                         highlight-current-row
                         :current-row-key="selectedMaintenance?.id"
@@ -107,6 +107,14 @@
                         </el-table-column>
                     </el-table>
                 </div>
+                <Pagination
+                    class="maintenance-list-pagination"
+                    :total-row="maintenanceList.length"
+                    :page="pagination.page"
+                    :row-size="pagination.pageSize"
+                    @current-change="changePage"
+                    @size-change="changePageSize"
+                />
             </GlassPanel>
 
             <MaintenanceDetailPanel :maintenance="selectedMaintenance" />
@@ -130,6 +138,7 @@ import {
     DropdownList,
     GlassPanel,
     MetricCardRow,
+    Pagination,
     SearchText,
     StatusBadge,
     TableRowActions,
@@ -150,6 +159,11 @@ const selectedMaintenance = ref<MaintenanceItem | null>(null) // 선택된 정�
 const editingMaintenance = ref<MaintenanceItem | null>(null) // 편집 중인 정비 이력 (수정/등록)
 const isFormDialogOpen = ref(false) // 정비 등록/수정 모달 표시 여부
 const deviceOptions = ref<MaintenanceDeviceOption[]>([]) // 정비 대상 장비 옵션 목록
+const pagination = reactive({ page: 1, pageSize: 10 }) // 정비 목록 페이지와 표시 건수
+const pagedMaintenance = computed(() => { // 현재 페이지의 정비 이력; 전체 검색 결과는 KPI 집계에 유지
+    const start = (pagination.page - 1) * pagination.pageSize
+    return maintenanceList.value.slice(start, start + pagination.pageSize)
+})
 
 const searchParams = reactive({ // 정비 이력 검색 파라미터
     keyword: '',
@@ -269,7 +283,7 @@ const selectMaintenance = (maintenance: MaintenanceItem) => {
 const changeDateRange = (value: [string, string] | null) => {
     searchParams.dateFrom = value?.[0] || ''
     searchParams.dateTo = value?.[1] || ''
-    getMaintenanceList()
+    searchMaintenance()
 }
 
 // getDevices 정비 대상 장비 목록 조회
@@ -288,15 +302,32 @@ const getMaintenanceList = async () => {
     })
     if (isSuccessResponse(res.result)) {
         maintenanceList.value = res.data.list
-        if (!maintenanceList.value.length) {
-            selectedMaintenance.value = null
-            return
-        }
-        const selectedId = selectedMaintenance.value?.id
-        selectedMaintenance.value =
-            maintenanceList.value.find(item => item.id === selectedId) ?? maintenanceList.value[0]
+        // 삭제나 수정 후 현재 페이지가 사라지면 마지막 페이지로 보정합니다.
+        pagination.page = Math.min(pagination.page, Math.max(1, Math.ceil(maintenanceList.value.length / pagination.pageSize)))
     }
 }
+
+// 검색 조건이나 정비일 범위가 변경되면 첫 페이지부터 조회합니다.
+const searchMaintenance = async () => {
+    pagination.page = 1
+    await getMaintenanceList()
+}
+
+// 조회된 전체 검색 결과에서 표시할 페이지만 변경합니다.
+const changePage = (page: number) => {
+    pagination.page = page
+}
+
+// 페이지당 표시 건수를 변경하고 첫 페이지로 이동합니다.
+const changePageSize = (pageSize: number) => {
+    pagination.pageSize = pageSize
+    pagination.page = 1
+}
+
+// 현재 페이지에서 선택 항목을 유지하고 없으면 첫 정비 이력을 상세 패널에 표시합니다.
+watch(pagedMaintenance, items => {
+    selectedMaintenance.value = items.find(item => item.id === selectedMaintenance.value?.id) ?? items[0] ?? null
+})
 
 // openCreateDialog 신규 정비 이력 등록 모달 열기
 const openCreateDialog = () => {
@@ -338,7 +369,7 @@ watch(
     () => searchParams.keyword,
     (keyword, prevKeyword) => {
         if (prevKeyword && !keyword.trim()) {
-            getMaintenanceList()
+            searchMaintenance()
         }
     },
 )
@@ -394,6 +425,11 @@ onMounted(async () => {
 .maintenance-table-wrap {
     flex: 1;
     min-height: 0;
+}
+
+.maintenance-list-pagination {
+    flex-shrink: 0;
+    margin: 12px 0 0;
 }
 
 @media (max-width: 1180px), (orientation: portrait) {
