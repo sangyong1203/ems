@@ -12,23 +12,14 @@
                     <SearchText
                         v-model="searchParams.keyword"
                         placeholder="장비명, 제목, 담당자 검색"
-                        width="250px"
+                        width="220px"
                         showSuffixIcon
                         @on-enter="searchMaintenance"
                     />
                     <DropdownList
-                        v-model="searchParams.deviceId"
-                        placeholder="대상 장비"
-                        width="160px"
-                        :list="deviceFilterOptions"
-                        option-label="label"
-                        option-value="value"
-                        @on-change="searchMaintenance"
-                    />
-                    <DropdownList
                         v-model="searchParams.maintenanceType"
                         placeholder="정비 유형"
-                        width="150px"
+                        width="130px"
                         :list="maintenanceTypeFilterOptions"
                         option-label="label"
                         option-value="value"
@@ -43,11 +34,12 @@
                         option-value="value"
                         @on-change="searchMaintenance"
                     />
-                    <el-date-picker
-                        v-model="dateRange"
+                    <DatePicker
+                        v-model:mode="dateMode"
+                        v-model:date="selectedDate"
+                        v-model:range="dateRange"
                         class="maintenance-date-range"
-                        type="daterange"
-                        value-format="YYYY-MM-DD"
+                        date-placeholder="정비일"
                         start-placeholder="시작일"
                         end-placeholder="종료일"
                         @change="changeDateRange"
@@ -144,6 +136,7 @@ import {
     TableRowActions,
     TableToolbar,
 } from '@/components'
+import DatePicker from '@/components/widget/DatePicker.vue'
 import { isSuccessResponse } from '@/utils'
 import MaintenanceDetailPanel from './components/MaintenanceDetailPanel.vue'
 import MaintenanceFormDialog from './components/MaintenanceFormDialog.vue'
@@ -167,13 +160,14 @@ const pagedMaintenance = computed(() => { // 현재 페이지의 정비 이력; 
 
 const searchParams = reactive({ // 정비 이력 검색 파라미터
     keyword: '',
-    deviceId: '' as number | '',
     maintenanceType: '',
     status: '',
     dateFrom: '',
     dateTo: '',
 })
-const dateRange = ref<[string, string] | null>(null) // 검색용 점검 일자 범위
+const dateMode = ref<'DAILY' | 'RANGE'>('RANGE') // 정비일 검색 방식
+const selectedDate = ref('') // 일간 검색에 사용할 정비일
+const dateRange = ref<[string, string] | null>(null) // 기간 검색에 사용할 시작일과 종료일
 
 const maintenanceTypeOptions = [
     { label: '정기점검', value: '정기점검' },
@@ -197,10 +191,6 @@ const statusOptions = [
 
 const maintenanceTypeFilterOptions = computed(() => [{ label: '전체 유형', value: '' }, ...maintenanceTypeOptions])
 const statusFilterOptions = computed(() => [{ label: '전체 상태', value: '' }, ...statusOptions])
-const deviceFilterOptions = computed(() => [
-    { label: '전체 장비', value: '' },
-    ...deviceOptions.value.map(item => ({ label: item.name, value: item.id })),
-])
 
 const scheduledCount = computed(() => maintenanceList.value.filter(item => item.status === 'SCHEDULED').length)
 const inProgressCount = computed(() => maintenanceList.value.filter(item => item.status === 'IN_PROGRESS').length)
@@ -279,10 +269,10 @@ const selectMaintenance = (maintenance: MaintenanceItem) => {
     selectedMaintenance.value = maintenance
 }
 
-// changeDateRange 검색 일자 범위 변경 및 목록 재조회
-const changeDateRange = (value: [string, string] | null) => {
-    searchParams.dateFrom = value?.[0] || ''
-    searchParams.dateTo = value?.[1] || ''
+// 일간은 시작일과 종료일을 같게 지정하고, 날짜 해제 시 기간 조건을 비웁니다.
+const changeDateRange = () => {
+    searchParams.dateFrom = dateMode.value === 'DAILY' ? selectedDate.value : dateRange.value?.[0] ?? ''
+    searchParams.dateTo = dateMode.value === 'DAILY' ? selectedDate.value : dateRange.value?.[1] ?? ''
     searchMaintenance()
 }
 
@@ -298,7 +288,6 @@ const getDevices = async () => {
 const getMaintenanceList = async () => {
     const res = await maintenanceManagementApi.getList({
         ...searchParams,
-        deviceId: searchParams.deviceId || undefined,
     })
     if (isSuccessResponse(res.result)) {
         maintenanceList.value = res.data.list
@@ -413,10 +402,6 @@ onMounted(async () => {
     min-width: 0;
 }
 
-.maintenance-date-range {
-    width: 230px;
-}
-
 .maintenance-create-button {
     height: 32px;
     padding: 0 16px;
@@ -460,11 +445,6 @@ onMounted(async () => {
 
     :deep(.table-toolbar__filters .dropdown-list) {
         flex: 1 1 140px;
-    }
-
-    .maintenance-date-range {
-        flex: 1 1 260px;
-        width: auto;
     }
 
     .maintenance-table-wrap {

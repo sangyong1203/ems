@@ -72,9 +72,9 @@ const props = withDefaults(
     {
         label: null,
         labelPosition: 'left',
-        modeWidth: '110px',
-        dateWidth: '170px',
-        rangeWidth: '300px',
+        modeWidth: '90px',
+        dateWidth: '160px',
+        rangeWidth: '260px',
         datePlaceholder: '리포트 날짜',
         startPlaceholder: '시작일',
         endPlaceholder: '종료일',
@@ -137,7 +137,7 @@ watch(
 .date-picker {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
     color: var(--text-color--primary);
 }
 
@@ -152,7 +152,7 @@ watch(
 .date-picker__content {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 4px;
     min-width: 0;
 }
 

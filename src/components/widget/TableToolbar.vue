@@ -12,7 +12,7 @@
 <style scoped>
 .table-toolbar {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 14px;
     margin-bottom: 14px;
