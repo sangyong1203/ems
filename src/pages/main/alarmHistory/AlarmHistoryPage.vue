@@ -9,7 +9,7 @@
                         v-model="searchParams.keyword"
                         placeholder="장비명, 유형, 메시지 검색"
                         width="220px"
-                        @on-enter="getAlarms"
+                        @on-enter="searchAlarms"
                     />
                     <DropdownList
                         v-model="searchParams.deviceId"
@@ -18,7 +18,7 @@
                         :list="deviceFilterOptions"
                         option-label="label"
                         option-value="value"
-                        @on-change="getAlarms"
+                        @on-change="searchAlarms"
                     />
                     <DropdownList
                         v-model="searchParams.severity"
@@ -27,7 +27,7 @@
                         :list="severityFilterOptions"
                         option-label="label"
                         option-value="value"
-                        @on-change="getAlarms"
+                        @on-change="searchAlarms"
                     />
                     <DropdownList
                         v-model="searchParams.alarmType"
@@ -36,7 +36,7 @@
                         :list="alarmTypeFilterOptions"
                         option-label="label"
                         option-value="value"
-                        @on-change="getAlarms"
+                        @on-change="searchAlarms"
                     />
                     <DropdownList
                         v-model="searchParams.status"
@@ -45,7 +45,7 @@
                         :list="statusFilterOptions"
                         option-label="label"
                         option-value="value"
-                        @on-change="getAlarms"
+                        @on-change="searchAlarms"
                     />
                     <el-date-picker
                         v-model="dateRange"
@@ -61,7 +61,7 @@
                 <div class="alarm-table-wrap">
                     <el-table
                         class="alarm-table"
-                        :data="alarms"
+                        :data="pagedAlarms"
                         height="100%"
                         highlight-current-row
                         :current-row-key="selectedAlarm?.id"
@@ -106,6 +106,14 @@
                         </el-table-column>
                     </el-table>
                 </div>
+                <Pagination
+                    class="alarm-list-pagination"
+                    :total-row="alarms.length"
+                    :page="pagination.page"
+                    :row-size="pagination.pageSize"
+                    @current-change="changePage"
+                    @size-change="changePageSize"
+                />
             </GlassPanel>
 
             <AlarmDetailPanel
@@ -120,7 +128,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { DropdownList, GlassPanel, MetricCardRow, SearchText, StatusBadge, TableToolbar } from '@/components'
+import { DropdownList, GlassPanel, MetricCardRow, Pagination, SearchText, StatusBadge, TableToolbar } from '@/components'
 import { isSuccessResponse } from '@/utils'
 import AlarmDetailPanel from './components/AlarmDetailPanel.vue'
 import AlarmRowActions from './components/AlarmRowActions.vue'
@@ -130,6 +138,11 @@ import type { AlarmActionStatus, AlarmDeviceOption, AlarmItem } from './service/
 const alarms = ref<AlarmItem[]>([]) // 알림 이력 목록
 const selectedAlarm = ref<AlarmItem | null>(null) // 상세 패널에 표시할 선택 알림
 const deviceOptions = ref<AlarmDeviceOption[]>([]) // 장비 필터 옵션 목록
+const pagination = reactive({ page: 1, pageSize: 10 }) // 알림 이력 페이지와 표시 건수
+const pagedAlarms = computed(() => { // 현재 페이지에 표시할 알림; 전체 검색 결과는 KPI 집계에 유지
+    const start = (pagination.page - 1) * pagination.pageSize
+    return alarms.value.slice(start, start + pagination.pageSize)
+})
 
 // 검색 및 필터 조건
 const searchParams = reactive({
@@ -259,7 +272,7 @@ const selectAlarm = (alarm: AlarmItem) => {
 const changeDateRange = (value: [string, string] | null) => {
     searchParams.dateFrom = value?.[0] || ''
     searchParams.dateTo = value?.[1] || ''
-    getAlarms()
+    searchAlarms()
 }
 
 // 필터 드롭다운에 표시할 장비 마스터 목록을 조회합니다.
@@ -278,19 +291,37 @@ const getAlarms = async () => {
     })
     if (isSuccessResponse(res.result)) {
         alarms.value = res.data.list
-        if (!alarms.value.length) {
-            selectedAlarm.value = null
-            return
-        }
-        const selectedId = selectedAlarm.value?.id
-        selectedAlarm.value = alarms.value.find(item => item.id === selectedId) ?? alarms.value[0]
+        // 조치 후 검색 결과가 줄어 현재 페이지가 사라지면 마지막 페이지로 보정합니다.
+        pagination.page = Math.min(pagination.page, Math.max(1, Math.ceil(alarms.value.length / pagination.pageSize)))
     }
 }
+
+// 검색 조건이 변경되면 첫 페이지부터 조회합니다.
+const searchAlarms = async () => {
+    pagination.page = 1
+    await getAlarms()
+}
+
+// 조회된 전체 결과에서 표시할 페이지만 변경합니다.
+const changePage = (page: number) => {
+    pagination.page = page
+}
+
+// 페이지당 표시 건수를 바꾸고 첫 페이지로 이동합니다.
+const changePageSize = (pageSize: number) => {
+    pagination.pageSize = pageSize
+    pagination.page = 1
+}
+
+// 현재 페이지에 선택 항목이 없으면 첫 알림을 상세 패널에 표시합니다.
+watch(pagedAlarms, items => {
+    selectedAlarm.value = items.find(item => item.id === selectedAlarm.value?.id) ?? items[0] ?? null
+})
 
 // 조치 완료 후 목록을 재조회하고 해당 알림의 상세 선택을 유지합니다.
 const refreshAfterAction = async (alarmId: number) => {
     await getAlarms()
-    selectedAlarm.value = alarms.value.find(item => item.id === alarmId) ?? selectedAlarm.value
+    selectedAlarm.value = pagedAlarms.value.find(item => item.id === alarmId) ?? pagedAlarms.value[0] ?? null
 }
 
 // 알림을 확인(ACKED) 처리합니다.
@@ -311,7 +342,7 @@ watch(
     () => searchParams.keyword,
     (keyword, prevKeyword) => {
         if (prevKeyword && !keyword.trim()) {
-            getAlarms()
+            searchAlarms()
         }
     },
 )
@@ -363,6 +394,11 @@ onMounted(async () => {
 .alarm-table-wrap {
     flex: 1;
     min-height: 0;
+}
+
+.alarm-list-pagination {
+    flex-shrink: 0;
+    margin: 12px 0 0;
 }
 
 @media (max-width: 1180px), (orientation: portrait) {
