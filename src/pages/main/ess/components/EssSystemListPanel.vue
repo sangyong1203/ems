@@ -20,18 +20,19 @@
                     <span :class="statusClass(item.status)">{{ statusLabel(item.status) }}</span>
                 </div>
                 <div class="ess-system-card__body">
-                    <div class="ess-system-card__battery">
+                    <div class="ess-system-card__soc">
                         <EssBattery
+                            class="ess-system-card__battery-visual"
                             :soc="item.soc"
                             :mode="item.mode"
                             compact
                             icon-position="left"
                             battery-position="right"
                         />
-                        <span>현재 전력 / 정격 용량</span>
+                        <strong>{{ formatNumber(item.soc) }}<small class="ess-system-card__soc-unit">%</small></strong>
                     </div>
-                    <div class="ess-system-card__soc">
-                        <strong>{{ formatNumber(item.soc) }}%</strong>
+                    <div class="ess-system-card__power">
+                        <span>현재 전력</span>
                         <span>{{ formatPower(item.currentPowerKw) }} / {{ formatNumber(item.capacityKwh) }} kWh</span>
                     </div>
                 </div>
@@ -120,7 +121,7 @@ const statusClass = (status?: string) => {
 .ess-system-card {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
     width: 100%;
     min-height: 120px;
     padding: 14px;
@@ -139,7 +140,8 @@ const statusClass = (status?: string) => {
 }
 
 .ess-system-card__top,
-.ess-system-card__body {
+.ess-system-card__soc,
+.ess-system-card__power {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -147,30 +149,36 @@ const statusClass = (status?: string) => {
 }
 
 .ess-system-card__body {
-    align-items: flex-end;
-}
-
-.ess-system-card__battery {
     display: flex;
     flex-direction: column;
     gap: 9px;
     min-width: 0;
 }
 
-.ess-system-card__soc {
-    display: flex;
-    flex: 0 0 auto;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 12px;
-    min-width: 126px;
+.ess-system-card__power {
+    flex-wrap: nowrap;
+}
+
+.ess-system-card__power span:last-child {
+    margin-left: auto;
     text-align: right;
+}
+
+.ess-system-card__battery-visual {
+    zoom: 0.8;
+}
+
+.ess-system-card__battery-visual :deep(.ess-battery__charge-icon) {
+    display: none;
 }
 
 .ess-system-card__soc strong {
     color: var(--secondary-color);
     font-size: 30px;
-    line-height: 32px;
+}
+
+.ess-system-card__soc-unit {
+    font-size: 20px;
 }
 
 .ess-system-card span {
