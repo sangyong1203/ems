@@ -1,8 +1,10 @@
 from datetime import datetime
 
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from .models import User
+from .repository import get_user
 from .repository import create_user as create_user_row
 from .repository import delete_user as delete_user_row
 from .repository import list_users as list_user_rows
@@ -37,6 +39,9 @@ def create_user(db: Session, payload: dict) -> dict:
 
 # 사용자를 수정하고 화면용 정보를 반환하며 대상이 없으면 None을 반환합니다.
 def update_user(db: Session, user_id: int, payload: dict) -> dict | None:
+    user = get_user(db, user_id)
+    if user is not None and (payload["role"] != "Platform Admin" or payload["status"] != "Active"):
+        _ensure_admin_remains(db, user)
     user = update_user_row(db, user_id, payload)
     if user is None:
         return None
@@ -45,6 +50,9 @@ def update_user(db: Session, user_id: int, payload: dict) -> dict | None:
 
 # 사용자 삭제 결과를 반환하며 커밋은 저장소에서 처리합니다.
 def delete_user(db: Session, user_id: int) -> bool:
+    user = get_user(db, user_id)
+    if user is not None:
+        _ensure_admin_remains(db, user)
     return delete_user_row(db, user_id)
 
 
@@ -67,3 +75,14 @@ def _user_out(user: User) -> dict:
         "lastLoginAt": _format_datetime(user.last_login_at),
         "createdAt": _format_datetime(user.created_at),
     }
+
+
+# 마지막 활성 관리자를 삭제·비활성화·권한 변경하여 관리 접근이 사라지는 것을 막습니다.
+def _ensure_admin_remains(db: Session, user: User) -> None:
+    if user.role != "Platform Admin" or user.status != "Active":
+        return
+    other_admin = db.query(User).filter(
+        User.id != user.id, User.role == "Platform Admin", User.status == "Active",
+    ).first()
+    if other_admin is None:
+        raise HTTPException(status_code=409, detail="At least one active administrator must remain.")

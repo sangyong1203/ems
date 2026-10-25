@@ -14,6 +14,7 @@
                     <el-icon class="header-user-icon"><User /></el-icon>
                     <span class="header-user-name">{{ userName }}</span>
                 </div>
+                <el-button class="change-password-button" @click="emit('change-password')">Change password</el-button>
                 <el-button type="primary" circle class="logout" @click="emit('logout')">
                     <el-icon><SwitchButton /></el-icon>
                 </el-button>
@@ -40,6 +41,7 @@ withDefaults(
 
 const emit = defineEmits<{
     logout: []
+    'change-password': []
 }>()
 </script>
 

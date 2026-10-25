@@ -21,5 +21,8 @@ def get_db() -> Generator[Session, None, None]:
     db = SessionLocal()  # 현재 요청에서 사용할 독립 세션
     try:
         yield db
+    except Exception:
+        db.rollback()
+        raise
     finally:
         db.close()

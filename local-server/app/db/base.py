@@ -1,7 +1,7 @@
 # 모든 ORM 모델을 가져와 Base.metadata에 테이블을 등록합니다.
 from ..core.database import Base
 from ..domains.alarm.models import Alarm
-from ..domains.auth.models import User
+from ..domains.auth.models import AuthSession, User
 from ..domains.device.models import Device
 from ..domains.ess.models import EssSystem, EssSystemBatteryRack
 from ..domains.maintenance.models import MaintenancePart, MaintenanceRecord
@@ -20,6 +20,7 @@ from ..domains.telemetry.models import (
 
 __all__ = [  # 모델 등록 모듈이 외부에 제공하는 이름 목록
     "Alarm",
+    "AuthSession",
     "Base",
     "DailyReport",
     "Device",

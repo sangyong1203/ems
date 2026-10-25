@@ -4,6 +4,7 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: sqlite:////data/solar_ems.db
+      INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-}
     volumes:
       - ./data:/data
 

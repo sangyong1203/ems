@@ -1,44 +1,32 @@
-﻿from pydantic import BaseModel
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
-# 로그인 요청
+# 로그인 요청; 기존 계정 전환을 위해 로그인 비밀번호에는 신규 길이 정책을 강제하지 않음
 class LoginBody(BaseModel):
-    username: str  # 로그인에 사용하는 사용자 ID
-    password: str  # 입력 비밀번호
+    username: str = Field(min_length=1, max_length=80)  # 로그인 ID
+    password: str = Field(min_length=1, max_length=128)  # 입력 비밀번호
 
 
-# 로컬 비밀번호 변경 요청 형식
+# 인증된 사용자의 비밀번호 변경 요청
 class PasswordChangeBody(BaseModel):
-    newPassword: str  # 변경 요청 비밀번호
-    verificationToken: str | None = None  # 검증 토큰; 로컬 처리에서는 검증하지 않음
-    isAdmin: str | None = None  # 관리자 구분 입력; 로컬 처리에서는 사용하지 않음
+    model_config = ConfigDict(extra='forbid')  # 기존 검증 토큰·관리자 플래그 입력을 허용하지 않음
+    currentPassword: str = Field(min_length=1, max_length=128)  # 현재 비밀번호 재확인
+    newPassword: str = Field(min_length=8, max_length=128)  # 새 비밀번호
 
 
-# 로컬 비밀번호 재설정 요청 형식
-class PasswordResetRequestBody(BaseModel):
-    email: str  # 이메일 주소
-    requestType: str | None = None  # 재설정 요청 구분; 로컬 처리에서는 사용하지 않음
-    isAdmin: str | None = None  # 관리자 구분 입력; 로컬 처리에서는 사용하지 않음
-
-
-# 로컬 비밀번호 재설정 저장 형식
-class PasswordResetBody(BaseModel):
-    password: str  # 입력 비밀번호
-    requestType: str | None = None  # 재설정 요청 구분; 로컬 처리에서는 사용하지 않음
-    isAdmin: str | None = None  # 관리자 구분 입력; 로컬 처리에서는 사용하지 않음
-    verificationToken: str | None = None  # 검증 토큰; 로컬 처리에서는 검증하지 않음
-
-
-# 로컬 토큰 재발급 요청 형식
+# 세션 재발급 또는 로그아웃 요청
 class TokenReissueBody(BaseModel):
-    refreshToken: str | None = None  # 갱신 토큰; 로컬 재발급에서는 검증하지 않음
-    isAdmin: str | None = None  # 관리자 구분 입력; 로컬 처리에서는 사용하지 않음
+    model_config = ConfigDict(extra='forbid')
+    refreshToken: str = Field(min_length=1, max_length=256)  # 서버가 발급한 갱신 토큰 원문; 유효성은 저장된 해시로 확인
 
 
-# 사용자 등록·수정 요청
+# 사용자 등록·수정 요청; 비밀번호는 생성 시 필수이며 수정 시 생략하면 유지
 class UserSaveBody(BaseModel):
-    name: str  # 사용자 이름
-    email: str  # 이메일 주소
-    department: str  # 소속 부서
-    role: str  # 사용자 역할
-    status: str  # 사용자 활성 상태 (Active / Inactive)
+    name: str = Field(min_length=1, max_length=80)  # 사용자 이름
+    email: str = Field(min_length=1, max_length=80)  # 이메일과 로그인 ID
+    department: str = Field(max_length=80)  # 소속 부서
+    role: Literal['Platform Admin', 'Operator', 'Viewer']  # 현재 로그인은 관리자 역할만 허용
+    status: Literal['Active', 'Inactive', 'Locked']  # 계정 상태
+    password: str | None = Field(default=None, min_length=8, max_length=128)  # 신규 초기 비밀번호 또는 관리자 재설정값

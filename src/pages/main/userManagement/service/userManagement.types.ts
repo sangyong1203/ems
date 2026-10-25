@@ -28,7 +28,9 @@ export type RequestParams = {
 }
 
 // UserSaveParams 사용자 등록/수정 파라미터
-export type UserSaveParams = Pick<UserItem, 'name' | 'email' | 'department' | 'role' | 'status'>
+export type UserSaveParams = Pick<UserItem, 'name' | 'email' | 'department' | 'role' | 'status'> & {
+    password?: string // 신규 등록 시 필수; 수정 시 입력하면 비밀번호와 기존 세션을 재설정
+}
 
 // UserListResponse 사용자 목록 응답
 export type UserListResponse = APIResponse & {

@@ -1,7 +1,10 @@
+from fastapi import HTTPException
 from sqlalchemy import or_
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from .models import User
+from .models import AuthSession, User
+from .security import hash_password
 
 
 # 로그인 ID가 정확히 일치하는 사용자를 조회합니다.
@@ -48,11 +51,13 @@ def get_user(db: Session, user_id: int) -> User | None:
     return db.query(User).filter(User.id == user_id).first()
 
 
-# 이메일을 로그인 ID로, 초기 비밀번호를 1111로 설정하여 사용자를 저장하고 커밋합니다.
+# 이메일을 로그인 ID로 사용하고 관리자가 입력한 초기 비밀번호를 해시화하여 저장합니다.
 def create_user(db: Session, payload: dict) -> User:
+    if not payload.get("password"):
+        raise HTTPException(status_code=422, detail="Initial password is required.")
     user = User(
         username=payload["email"],
-        password_hash="1111",
+        password_hash=hash_password(payload["password"]),
         name=payload["name"],
         email=payload["email"],
         department=payload["department"],
@@ -60,7 +65,11 @@ def create_user(db: Session, payload: dict) -> User:
         status=payload["status"],
     )
     db.add(user)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="A user with this login ID already exists.")
     db.refresh(user)
     return user
 
@@ -77,7 +86,14 @@ def update_user(db: Session, user_id: int, payload: dict) -> User | None:
     user.department = payload["department"]
     user.role = payload["role"]
     user.status = payload["status"]
-    db.commit()
+    if payload.get("password"):
+        user.password_hash = hash_password(payload["password"])
+    db.query(AuthSession).filter(AuthSession.user_id == user.id).update({"revoked": True})
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="A user with this login ID already exists.")
     db.refresh(user)
     return user
 
@@ -87,6 +103,7 @@ def delete_user(db: Session, user_id: int) -> bool:
     user = get_user(db, user_id)
     if user is None:
         return False
+    db.query(AuthSession).filter(AuthSession.user_id == user.id).delete()
     db.delete(user)
     db.commit()
     return True

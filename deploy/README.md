@@ -126,6 +126,14 @@ solar-ems-backend
 
 ### 4.4 컨테이너 실행
 
+최초 실행과 기존 평문 관리자 계정 전환 시 `compose.deploy.yaml`과 같은 폴더에 `.env` 파일을 만들고 다음 값을 직접 설정합니다. 실제 비밀번호는 8~128자로 정하고 `.env`는 Git에 커밋하거나 배포 패키지에 포함하지 않습니다.
+
+```dotenv
+INITIAL_ADMIN_PASSWORD=직접_설정한_초기_관리자_비밀번호
+```
+
+관리자 비밀번호가 이미 해시로 저장된 이후에는 이 값으로 비밀번호를 덮어쓰지 않습니다. 로그인 후 헤더의 **Change password**로 변경합니다.
+
 ```bash
 mkdir -p data
 sudo docker compose -f compose.deploy.yaml up -d
@@ -156,11 +164,11 @@ http://localhost
 http://리눅스서버IP
 ```
 
-기본 로그인 계정:
+관리자 로그인 계정 (관리자 역할만 로그인 가능):
 
 ```text
 ID: admin
-Password: 1111
+Password: 최초 설정한 INITIAL_ADMIN_PASSWORD 값
 ```
 
 ---

@@ -26,28 +26,34 @@ export const handleApiError = (props: {
     reject: (reason?: any) => void
 }) => {
     const { res, config, resolve, reject } = props
-    if (isNil(res)) return
+    if (isNil(res)) {
+        reject(res)
+        return
+    }
 
     if (res.status === 401) {
-        refreshAccessToken({ config, resolve })
+        void refreshAccessToken({ config, resolve, reject })
         return
     }
 
     if (res.status === 403) {
         Notification.error(getErrorMessage('403'))
+        reject(res)
         return
     }
 
     if (res.status === 404) {
         Notification.error(getErrorMessage('404'))
+        reject(res)
         return
     }
 
     if (res.status === 500) {
         Notification.error(getErrorMessage('500'))
+        reject(res)
         return
     }
 
-    Notification.error(res.data?.resultMessage || getErrorMessage('UNEXPECTED_ERROR'))
+    Notification.error(res.data?.resultMessage || res.data?.detail || getErrorMessage('UNEXPECTED_ERROR'))
     reject(res.data)
 }

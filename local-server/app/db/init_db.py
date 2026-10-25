@@ -1,4 +1,4 @@
-from datetime import datetime
+import os
 
 from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from .base import Base, Device, EssSystem, EssSystemBatteryRack, InverterPvStringLink, ProjectConfig, PvString, User
 from .power_flow_seed import ensure_power_flow_layout
 from ..core.database import engine
+from ..domains.auth.security import hash_password
 from ..domains.simulator.generator import generate_today
 
 
@@ -207,55 +208,29 @@ def _ensure_battery_racks(db: Session) -> None:
             )
 
 
-# 기본 사용자를 추가하고 기존 사용자는 비밀번호를 제외한 빈 필드만 채웁니다.
-def _ensure_seed_users(db: Session) -> None:
-    seed_users = [
-        {
-            "username": "admin",
-            "password_hash": "1111",
-            "name": "System Administrator",
-            "email": "admin@Solar.local",
-            "department": "Platform",
-            "role": "Platform Admin",
-            "status": "Active",
-            "last_login_at": datetime(2026, 5, 22, 9, 10, 0),
-            "created_at": datetime(2026, 5, 1, 10, 0, 0),
-        },
-        {
-            "username": "operator@Solar.local",
-            "password_hash": "1111",
-            "name": "Operations Manager",
-            "email": "operator@Solar.local",
-            "department": "Operations",
-            "role": "Operator",
-            "status": "Active",
-            "last_login_at": datetime(2026, 5, 21, 18, 24, 0),
-            "created_at": datetime(2026, 5, 3, 14, 20, 0),
-        },
-        {
-            "username": "viewer@Solar.local",
-            "password_hash": "1111",
-            "name": "Security Viewer",
-            "email": "viewer@Solar.local",
-            "department": "Security",
-            "role": "Viewer",
-            "status": "Inactive",
-            "last_login_at": datetime(2026, 5, 18, 11, 5, 0),
-            "created_at": datetime(2026, 5, 5, 9, 35, 0),
-        },
-    ]
-
-    for item in seed_users:
-        user = db.query(User).filter(User.username == item["username"]).first()
-        if user is None:
-            db.add(User(**item))
+# 최초 관리자는 환경변수로 생성하고, 기존 평문 계정은 한 번만 Argon2 해시로 전환합니다.
+def _ensure_admin_users(db: Session) -> None:
+    users = db.query(User).all()
+    admin = next((user for user in users if user.username == "admin"), None)
+    initial_password = os.getenv("INITIAL_ADMIN_PASSWORD", "")  # 최초 생성 또는 기존 기본 관리자 전환에만 사용
+    needs_admin = admin is None and not any(user.role == "Platform Admin" and user.status == "Active" for user in users)
+    needs_admin_conversion = admin is not None and not admin.password_hash.startswith("$argon2id$")
+    if needs_admin or needs_admin_conversion:
+        if not 8 <= len(initial_password) <= 128:
+            raise RuntimeError("Set INITIAL_ADMIN_PASSWORD to 8-128 characters before initializing the administrator.")
+    if needs_admin:
+        admin = User(
+            username="admin", password_hash=hash_password(initial_password),
+            name="System Administrator", email="admin@Solar.local", department="Platform",
+            role="Platform Admin", status="Active",
+        )
+        db.add(admin)
+    for user in users:
+        if user.password_hash.startswith("$argon2id$"):
             continue
-
-        for key, value in item.items():
-            if key == "password_hash":
-                continue
-            if not getattr(user, key, None):
-                setattr(user, key, value)
+        # 초기 관리자만 새 환경변수 비밀번호로 교체하고 다른 기존 계정은 비밀번호를 유지한 채 해시화합니다.
+        password = initial_password if user.username == "admin" else user.password_hash
+        user.password_hash = hash_password(password)
 
 
 # 등록된 모델의 테이블을 생성하고 기존 DB의 누락 컬럼과 사용자 정보를 보정합니다.
@@ -306,7 +281,7 @@ def create_tables() -> None:
 
 # 기본 사용자·설비·장비 연결·전력 흐름 배치를 저장한 뒤 오늘의 가상 운전 데이터를 재생성합니다.
 def seed_database(db: Session) -> None:
-    _ensure_seed_users(db)
+    _ensure_admin_users(db)
 
     if db.query(ProjectConfig).count() == 0:
         db.add(

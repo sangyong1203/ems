@@ -7,7 +7,9 @@ import { useAuthStore } from '@/stores/auth.store'
 import { handleApiError } from './handleError'
 import type { APIResponse, PathVariables, PayloadModel } from './type'
 
-export type RequestConfig = AxiosRequestConfig
+export type RequestConfig = AxiosRequestConfig & {
+    authSessionId?: string // 요청을 시작한 로그인 구분값
+}
 
 export type RequestOption = {
     headers?: any
@@ -61,10 +63,13 @@ export const makeRequiredRequestConfig = (method: Method) => {
 
         return {
             url: replaceUrl(url, path),
-            withCredentials: true,
+            authSessionId: useAuthStore().authState.sessionId,
+            withCredentials: false,
             method,
             headers: {
-                Authorization: `Bearer ${useAuthStore().authState.tokens.accessToken}`,
+                ...(opt?.auth !== false && useAuthStore().authState.tokens.accessToken
+                    ? { Authorization: `Bearer ${useAuthStore().authState.tokens.accessToken}` }
+                    : {}),
                 ...headers,
             },
             data,
@@ -97,7 +102,7 @@ export const request = (method: Method) => {
                         resolve(response.data)
                     })
                     .catch(err => {
-                        if (config.url === '/api/auth/login' || config.url === '/api/auth/password/reset') {
+                        if (opt.auth === false) {
                             reject(err.response ?? err)
                         } else {
                             handleApiError({

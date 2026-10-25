@@ -8,18 +8,13 @@ const router = createRouter({
 })
 
 
-router.beforeEach(async (to, from) => {
-    
+// 업무 화면은 관리자 로그인 상태에서만 진입하며 실제 API 권한은 서버에서도 검증합니다.
+router.beforeEach(to => {
     const authStore = useAuthStore()
-    console.log(`to path: ${to.path}, from path: ${from.path}, auth Store: ${authStore.authState.user?.loginId}`)    
-
-    if (
-        !authStore.isAuthenticated &&
-        to.path !== '/' &&
-        to.path !== '/login'
-    ) {
-        window.location.replace('/login')
-    }
+    const publicPaths = ['/login', '/403', '/404', '/500']
+    if (publicPaths.includes(to.path) || to.name === 'passwordReset') return
+    if (!authStore.isAuthenticated) return { name: 'login' }
+    if (authStore.authState.user?.userLevel !== 'PLATFORM_ADMIN') return { name: '403' }
 })
 
 export default router

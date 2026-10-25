@@ -1,273 +1,82 @@
 <template>
-    <el-dialog v-model="dialogVisible" :header-class="'hide-header'" fullscreen>
-        <div class="wrapper">
-            <div class="header">
-                <div>Admin Portal</div>
-            </div>
-
-            <div class="instruction">
-                <p>The password has not been changed for 90 days. For your security, please change your password.</p>
-            </div>
-
-            <div class="guideline">
-                <ul>
-                    <li>
-                        Please write in 8 to 12 characters using a mixture of English letters, numbers and special
-                        characters (!@#$%^&*)
-                    </li>
-                    <li>Do not include email address.</li>
-                    <li>The same character cannot be repeated more than 3 times.</li>
-                    <li>You cannot use more than 3 consecutive digits</li>
-                </ul>
-            </div>
-
-            <div class="input-form">
-                <el-form label-width="auto" label-position="left" require-asterisk-position="right">
-                    <el-form-item label="New Password">
-                        <el-input
-                            v-model="formData.newPassword"
-                            maxlength="12"
-                            type="password"
-                            placeholder="Input password"
-                        />
-                    </el-form-item>
-                    <el-form-item label="New Password confirm">
-                        <el-input
-                            v-model="formData.newPasswordConfirm"
-                            maxlength="12"
-                            type="password"
-                            placeholder="New Password confirm"
-                        />
-                    </el-form-item>
-                </el-form>
-                <div class="validationMsg">{{ validationMsg }}</div>
-            </div>
-
-            <div class="btn-container">
-                <el-button @click="handleCancel">Cancel</el-button>
-                <el-button type="primary" @click="handleSave">Save</el-button>
-            </div>
-        </div>
-    </el-dialog>
+    <BaseDialog
+        v-model="visible"
+        title="Change password"
+        width="500px"
+        :button-types="['Cancel', 'Save']"
+        @on-cancel="visible = false"
+        @on-save="handleSave"
+    >
+        <el-form class="change-password-form" label-position="top" @submit.prevent="handleSave">
+            <el-form-item label="Current password">
+                <el-input v-model="form.currentPassword" type="password" show-password autocomplete="current-password" :maxlength="128" />
+            </el-form-item>
+            <el-form-item label="New password (8–128 characters)">
+                <el-input v-model="form.newPassword" type="password" show-password autocomplete="new-password" :maxlength="128" />
+            </el-form-item>
+            <el-form-item label="Confirm new password">
+                <el-input v-model="form.confirmPassword" type="password" show-password autocomplete="new-password" :maxlength="128" />
+            </el-form-item>
+            <p class="change-password-message" role="alert">{{ validationMessage }}</p>
+        </el-form>
+    </BaseDialog>
 </template>
 
-<script lang="ts" setup>
-import { ref, reactive } from 'vue'
-import type { ChangePassword } from './service/login.types'
-import loginApi from './service/login.api'
+<script setup lang="ts">
+import { reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { BaseDialog } from '@/components'
 import { Notification } from '@/composables/useFeedback'
-import router from '@/router'
+import { useAuthStore } from '@/stores/auth.store'
+import { useMenuStore } from '@/stores/menu.store'
+import { useNavStore } from '@/stores/nav.store'
+import loginApi from './service/login.api'
 
-const dialogVisible = ref(false)
-const verificationToken = ref('')
-const emits = defineEmits(['optpCode'])
+const visible = ref(false) // 비밀번호 변경 창 표시 여부
+const saving = ref(false) // 중복 변경 요청 방지
+const validationMessage = ref('') // 입력 및 처리 오류 안내
+const form = reactive({ currentPassword: '', newPassword: '', confirmPassword: '' }) // 비밀번호 입력
+const router = useRouter() // 변경 후 로그인 화면으로 이동
+const authStore = useAuthStore() // 폐기된 인증 상태 제거
 
-const openDialog = async (token: string) => {
-    verificationToken.value = token
-    dialogVisible.value = true
+// 창을 열 때 이전 비밀번호와 오류 메시지를 비웁니다.
+const openDialog = () => {
+    Object.assign(form, { currentPassword: '', newPassword: '', confirmPassword: '' })
+    validationMessage.value = ''
+    visible.value = true
 }
 
-const formData = reactive<ChangePassword>({
-    newPassword: '',
-    newPasswordConfirm: '',
-})
-
-const validationMsg = ref('')
+// 현재 비밀번호를 재확인하여 변경하고 폐기된 세션으로 요청하지 않도록 로그인 화면으로 이동합니다.
 const handleSave = async () => {
-    if (!formData.newPassword) {
-        validationMsg.value = 'Please enter a new password.'
+    if (saving.value) return
+    if (!form.currentPassword || form.newPassword.length < 8 || form.newPassword.length > 128) {
+        validationMessage.value = 'Enter your current password and a new password of 8–128 characters.'
         return
     }
-
-    if (!formData.newPasswordConfirm) {
-        validationMsg.value = 'Please enter your password verification number.'
+    if (form.newPassword !== form.confirmPassword) {
+        validationMessage.value = 'The new passwords do not match.'
         return
     }
-
-    if (formData.newPassword !== formData.newPasswordConfirm) {
-        validationMsg.value = 'The new password and confirmation do not match.'
-        return
-    }
-
-    const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,12}$/
-    if (!passwordPattern.test(formData.newPassword)) {
-        validationMsg.value =
-            'Please check your password again. Passwords must be 8-12 characters mixed with alphabetic characters, numbers, and special characters (!@#$%&*^).'
-        return
-    }
-
-    const repeatCharPattern = /(.)\1\1/
-    if (repeatCharPattern.test(formData.newPassword)) {
-        validationMsg.value =
-            'Please check your password again. You cannot repeat the same character more than 3 times.'
-        return
-    }
-
-    const consecutiveCharPattern = /012|123|234|345|456|567|678|789|890|987|876|765|654|543|432|321|210/
-    if (consecutiveCharPattern.test(formData.newPassword)) {
-        validationMsg.value =
-            'Please check your password again. You cannot repeat consecutive numbers more than 3 times.'
-        return
-    }
-
-    if (verificationToken.value) {
-        const params = {
-            newPassword: formData.newPassword,
-            verificationToken: verificationToken.value,
-            isAdmin: 'Y',
+    saving.value = true
+    try {
+        const response = await loginApi.changePassword({ currentPassword: form.currentPassword, newPassword: form.newPassword })
+        if (response.result !== 'SUCCESS') {
+            validationMessage.value = response.resultMessage
+            return
         }
-        loginApi
-            .changePassword(params)
-            .then(res => {
-                if (res.result.toLowerCase() == 'success') {
-                    // emits('optpCode', res.data.otpCode.toString() || '')
-
-                    // dialogVisible.value = false
-                    // validationMsg.value = ''
-                    Notification.success(
-                        'Your password has been reset. Please enter a new password to complete the process.',
-                    )
-                    router.push('/login')
-                } else {
-                    validationMsg.value =
-                        res.resultMessage || 'An error occurred while changing the password. Please try again.'
-                }
-            })
-            .catch(() => {
-                validationMsg.value = 'An error occurred while changing the password. Please try again.'
-            })
+        visible.value = false
+        Object.assign(form, { currentPassword: '', newPassword: '', confirmPassword: '' })
+        authStore.clearSession()
+        useMenuStore().init()
+        useNavStore().init()
+        Notification.success('Password changed. Please sign in again.')
+        await router.replace('/login')
+    } catch {
+        validationMessage.value = 'Password change failed. Check your current password and try again.'
+    } finally {
+        saving.value = false
     }
-}
-
-const handleCancel = () => {
-    router.back()
 }
 
 defineExpose({ openDialog })
 </script>
-
-<style scoped>
-.wrapper {
-    width: 920px;
-    margin: 0 auto;
-
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-
-    padding: 40px;
-
-    .header {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        width: 840px;
-        height: 144px;
-        gap: 16px;
-
-        div:first-child {
-            width: 270px;
-            margin: 0 auto;
-        }
-
-        div:last-child {
-            font-weight: 400;
-            font-style: Light;
-            font-size: 32px;
-        }
-    }
-
-    .instruction {
-        p {
-            margin: 16px 8px 0 8px;
-            width: 840px;
-            height: 15px;
-            font-weight: 400;
-            font-style: Regular;
-            font-size: 15px;
-            line-height: 100%;
-            letter-spacing: 0%;
-            text-align: center;
-            vertical-align: middle;
-            color: #ff383c;
-        }
-    }
-
-    .guideline {
-        width: 840px;
-        height: 160px;
-        padding: 20px;
-        background-color: #f7f6f9;
-        margin: 16px 8px;
-        border-radius: 8px;
-
-        ul {
-            li {
-                width: 800px;
-                font-weight: 400;
-                font-size: 16px;
-                line-height: 160%;
-                letter-spacing: -3%;
-                color: #3e2576;
-            }
-        }
-    }
-
-    .input-form {
-        width: 840px;
-        height: 179px;
-        gap: 20px;
-        border-top-width: 2px;
-        padding-top: 20px;
-        padding-bottom: 20px;
-
-        :deep(.el-form-item__label) {
-            font-weight: 600;
-            font-style: Bold;
-            font-size: 18px;
-            line-height: 20px;
-            letter-spacing: 0%;
-        }
-
-        :deep(.el-input__wrapper) {
-            border: none !important;
-            box-shadow: none !important;
-        }
-
-        :deep(.el-input__inner) {
-            width: 613px;
-            height: 36px;
-            min-width: 180px;
-            border-radius: 999px;
-            padding-top: 4px;
-            padding-right: 8px;
-            padding-bottom: 4px;
-            padding-left: 20px;
-            background-color: #f4f4f4;
-            border: none;
-        }
-
-        .validationMsg {
-            margin: 16px 8px;
-            font-weight: 400;
-            font-size: 15px;
-            text-align: center;
-            vertical-align: middle;
-            color: #ff383c;
-        }
-    }
-
-    .btn-container {
-        display: flex;
-        justify-content: center;
-        gap: 4px;
-    }
-}
-
-.hide-header.el-dialog__header {
-    display: none !important;
-}
-</style>

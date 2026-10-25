@@ -1,8 +1,9 @@
 # 도메인 라우터를 한곳에 모아 앱에서 등록할 API를 구성합니다.
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from ..domains.alarm.router import router as alarms_router
 from ..domains.auth.router import router as auth_router
+from ..domains.auth.dependencies import require_admin
 from ..domains.auth.user_router import router as users_router
 from ..domains.dashboard.router import router as dashboard_router
 from ..domains.device.router import router as devices_router
@@ -22,18 +23,18 @@ from ..domains.trend.router import router as trend_router
 api_router = APIRouter()  # 도메인별 API를 묶는 최상위 라우터
 
 api_router.include_router(auth_router)
-api_router.include_router(users_router)
-api_router.include_router(project_router)
-api_router.include_router(dashboard_router)
-api_router.include_router(solar_router)
-api_router.include_router(ess_router)
-api_router.include_router(power_flow_router)
-api_router.include_router(power_flow_editor_router)
-api_router.include_router(trend_router)
-api_router.include_router(devices_router)
-api_router.include_router(pv_strings_router)
-api_router.include_router(telemetry_router)
-api_router.include_router(alarms_router)
-api_router.include_router(maintenance_router)
-api_router.include_router(reports_router)
-api_router.include_router(simulator_router)
+api_router.include_router(users_router, dependencies=[Depends(require_admin)])
+api_router.include_router(project_router, dependencies=[Depends(require_admin)])
+api_router.include_router(dashboard_router, dependencies=[Depends(require_admin)])
+api_router.include_router(solar_router, dependencies=[Depends(require_admin)])
+api_router.include_router(ess_router, dependencies=[Depends(require_admin)])
+api_router.include_router(power_flow_router, dependencies=[Depends(require_admin)])
+api_router.include_router(power_flow_editor_router, dependencies=[Depends(require_admin)])
+api_router.include_router(trend_router, dependencies=[Depends(require_admin)])
+api_router.include_router(devices_router, dependencies=[Depends(require_admin)])
+api_router.include_router(pv_strings_router, dependencies=[Depends(require_admin)])
+api_router.include_router(telemetry_router, dependencies=[Depends(require_admin)])
+api_router.include_router(alarms_router, dependencies=[Depends(require_admin)])
+api_router.include_router(maintenance_router, dependencies=[Depends(require_admin)])
+api_router.include_router(reports_router, dependencies=[Depends(require_admin)])
+api_router.include_router(simulator_router, dependencies=[Depends(require_admin)])

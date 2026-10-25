@@ -2,7 +2,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { PersistedStateOptions } from 'pinia-plugin-persistedstate'
 
-export type RoleLevel = 'PLATFORM_ADMIN' | 'USER'
+export type RoleLevel = 'PLATFORM_ADMIN' // 현재 앱은 관리자만 사용
 
 export type AuthUser = {
     loginId: string
@@ -15,10 +15,10 @@ export type AuthUser = {
 export type AuthTokens = {
     accessToken: string
     refreshToken: string
-    verificationToken: string
 }
 
 export type AuthState = {
+    sessionId: string // 프론트 로그인 구분값; 서버 인증에는 사용하지 않음
     user: AuthUser | null
     tokens: AuthTokens
 }
@@ -26,10 +26,10 @@ export type AuthState = {
 const createEmptyTokens = (): AuthTokens => ({
     accessToken: '',
     refreshToken: '',
-    verificationToken: '',
 })
 
 const createInitialAuthState = (): AuthState => ({
+    sessionId: `${Date.now()}-${Math.random()}`,
     user: null,
     tokens: createEmptyTokens(),
 })
@@ -54,6 +54,7 @@ export const useAuthStore = defineStore(
 
         const setSession = (session: { user: AuthUser; tokens: Partial<AuthTokens> }) => {
             authState.value = {
+                sessionId: authState.value.sessionId,
                 user: session.user,
                 tokens: {
                     ...createEmptyTokens(),

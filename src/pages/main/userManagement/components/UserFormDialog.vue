@@ -15,9 +15,20 @@
             <el-form-item label="Email" prop="email">
                 <el-input v-model="form.email" placeholder="Enter email" />
             </el-form-item>
+            <el-form-item :label="editingUser ? 'New password' : 'Initial password'" prop="password">
+                <el-input
+                    v-model="form.password"
+                    type="password"
+                    show-password
+                    autocomplete="new-password"
+                    :maxlength="128"
+                    :placeholder="editingUser ? 'Leave blank to keep the password' : 'Enter 8–128 characters'"
+                />
+            </el-form-item>
             <el-form-item label="Department" prop="department">
                 <el-input v-model="form.department" placeholder="Enter department" />
             </el-form-item>
+            <p class="user-role-guide">Only Platform Admin accounts can sign in.</p>
             <el-form-item label="Role" prop="role">
                 <el-select v-model="form.role" placeholder="Select role" style="width: 100%">
                     <el-option v-for="item in roleOptions" :key="item.value" :label="item.label" :value="item.value" />
@@ -65,7 +76,8 @@ const form = reactive<UserSaveParams>({ // 사용자 입력 폼 데이터
     name: '',
     email: '',
     department: '',
-    role: 'Operator',
+    role: 'Platform Admin',
+    password: '',
     status: 'Active',
 })
 
@@ -82,6 +94,20 @@ const statusOptions: Array<SelectOption<UserStatus>> = [
 ]
 
 const rules: FormRules = { // 폼 유효성 검사 규칙
+    password: [{
+        validator: (_rule, value: string | undefined, callback) => {
+            if (!value && props.editingUser) {
+                callback()
+                return
+            }
+            if (!value || value.length < 8 || value.length > 128) {
+                callback(new Error('Enter an initial password of 8–128 characters.'))
+                return
+            }
+            callback()
+        },
+        trigger: 'blur',
+    }],
     name: [{ required: true, message: 'Please enter a name.', trigger: 'blur' }],
     email: [
         { required: true, message: 'Please enter an email.', trigger: 'blur' },
@@ -106,7 +132,8 @@ const resetForm = () => {
     form.name = ''
     form.email = ''
     form.department = ''
-    form.role = 'Operator'
+    form.role = 'Platform Admin'
+    form.password = ''
     form.status = 'Active'
 }
 
@@ -116,6 +143,7 @@ watch(
     async ([isOpen, user]) => {
         if (!isOpen) return
 
+        form.password = ''
         if (user) {
             form.name = user.name
             form.email = user.email
@@ -142,7 +170,8 @@ const handleSave = async () => {
     const isValid = await formRef.value?.validate().catch(() => false)
     if (!isValid) return
 
-    emit('submit', { ...form })
+    const { password, ...user } = form
+    emit('submit', { ...user, ...(password ? { password } : {}) })
 }
 
 defineExpose({ clearValidate })

@@ -27,16 +27,18 @@ cd local-server
 python -m venv .venv
 .\.venv\Scripts\activate
 pip install -r requirements.txt
+# 아래 초기 관리자 설정을 먼저 완료한 뒤 서버를 실행합니다.
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-### Linux / WSL
+### macOS / Linux / WSL
 
 ```bash
 cd local-server
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+# 아래 초기 관리자 설정을 먼저 완료한 뒤 서버를 실행합니다.
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
@@ -54,12 +56,55 @@ local-server/solar_ems.db
 
 ---
 
-## 기본 계정
+## 관리자 계정과 인증
 
-```text
-ID: admin
-Password: 1111
+관리자(`Platform Admin`)만 로그인하고 업무 API를 사용할 수 있습니다. `Operator`와 `Viewer`는 로그인할 수 없습니다.
+
+최초 관리자 ID는 `admin`입니다. 최초 생성 또는 기존 평문 `admin` 계정 전환 전에 **8~128자 비밀번호**를 `INITIAL_ADMIN_PASSWORD` 환경변수로 설정하세요.
+
+macOS zsh:
+
+```zsh
+read -s "INITIAL_ADMIN_PASSWORD?초기 관리자 비밀번호: "
+export INITIAL_ADMIN_PASSWORD
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
+
+Linux / WSL bash:
+
+```bash
+read -rs -p '초기 관리자 비밀번호: ' INITIAL_ADMIN_PASSWORD
+export INITIAL_ADMIN_PASSWORD
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+Windows PowerShell:
+
+```powershell
+$env:INITIAL_ADMIN_PASSWORD = [System.Net.NetworkCredential]::new('', (Read-Host '초기 관리자 비밀번호' -AsSecureString)).Password
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+- 기존 평문 `admin` 비밀번호는 처음 전환할 때 환경변수 값으로 교체합니다. 다른 기존 계정은 비밀번호를 유지한 채 Argon2id 해시로 전환합니다.
+- 이미 Argon2id 해시인 계정은 재시작이나 환경변수 변경으로 비밀번호가 덮어써지지 않습니다. 로그인 후 헤더의 **Change password**에서 변경하세요.
+- 기본 비밀번호 `1111`과 샘플 사용자 자동 생성은 제거했습니다. 신규 사용자는 관리자가 초기 비밀번호를 입력합니다. 수정 시 새 비밀번호를 입력하면 재설정하고, 생략하면 유지합니다.
+- 액세스 토큰은 **1시간**, 갱신 토큰과 세션은 로그인부터 **1일** 유효합니다. 갱신해도 세션 만료일은 연장되지 않습니다.
+- DB에는 비밀번호의 Argon2id 해시와 토큰의 SHA-256 해시만 저장합니다. 기존 고정 토큰은 사용할 수 없으므로 다시 로그인해야 합니다.
+- 로그아웃은 해당 세션을 폐기합니다. 비밀번호 변경과 사용자 정보 수정은 해당 사용자의 모든 세션을 폐기합니다.
+- 이메일 비밀번호 재설정은 비활성 상태입니다. 다른 관리자에게 비밀번호 재설정을 요청하세요.
+- 마지막 활성 관리자는 삭제하거나 비활성화·권한 변경할 수 없습니다.
+
+API 문서에서는 `/api/auth/login`으로 받은 `accessToken`을 **Authorize**에 입력해야 업무 API를 호출할 수 있습니다.
+
+### 인증 검증
+
+프로젝트 루트에서 다음 명령으로 실제 SQLite 파일과 분리된 메모리 DB 검증을 실행합니다.
+
+```bash
+local-server/.venv/bin/python local-server/test_auth.py
+```
+
+Windows에서는 `local-server\.venv\Scripts\python.exe local-server\test_auth.py`를 사용합니다.
 
 ---
 
@@ -456,7 +501,7 @@ seed_database(db)
 
 `seed_database()`:
 
-- 기본 admin 계정 생성
+- 환경변수 기반 최초 관리자 생성 및 기존 평문 비밀번호의 일회성 해시 전환
 - 프로젝트 설정 생성
 - 기본 장비 생성
 - PV string 생성

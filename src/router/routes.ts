@@ -8,7 +8,7 @@ export const routes: RouteRecordRaw[] = [
         component: () => import('@/pages/login/LoginPage.vue'),
     },
     {
-        path: '/password-reset/:verificationToken',
+        path: '/password-reset',
         name: 'passwordReset',
         component: () => import('@/pages/login/PasswordReset.vue'),
     },

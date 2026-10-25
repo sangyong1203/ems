@@ -15,6 +15,7 @@
                 :icon="currentMenuItem.icon"
                 :user-name="userDisplayName"
                 @logout="logOut"
+                @change-password="changePasswordRef?.openDialog()"
             />
         </template>
 
@@ -22,18 +23,25 @@
             <component :is="Component"></component>
         </RouterView>
     </MainLayout>
+    <ChangePassword ref="changePasswordRef" />
 </template>
 
 <script setup lang="ts">
 import MainLayout from '@/layouts/MainLayout.vue'
 import MainHeader from '@/layouts/MainHeader.vue'
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import ChangePassword from '@/pages/login/ChangePassword.vue'
+import loginApi from '@/pages/login/service/login.api'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import { LeftMenu } from '@/components'
+import { Notification } from '@/composables/useFeedback'
 import { useAppStore } from '@/stores/app.store'
 import { useAuthStore } from '@/stores/auth.store'
 import { useMenuStore } from '@/stores/menu.store'
 import { useNavStore } from '@/stores/nav.store'
+
+const changePasswordRef = ref<InstanceType<typeof ChangePassword> | null>(null) // 비밀번호 변경 창
+const loggingOut = ref(false) // 중복 로그아웃 방지
 
 const appStore = useAppStore() // 앱 상태 스토어
 const authStore = useAuthStore() // 인증 상태 스토어
@@ -94,13 +102,25 @@ const userDisplayName = computed(() => {
     return user?.name || user?.email || user?.loginId || 'User'
 })
 
-// 로그아웃 및 스토어 초기화
-const logOut = () => {
-    authStore.clearSession()
-    appStore.init()
-    menuStore.init()
-    navStore.init()
-    router.push('/login')
+// 서버에서 세션 폐기를 확인한 뒤 프론트 인증 상태와 메뉴를 초기화합니다.
+const logOut = async () => {
+    if (loggingOut.value) return
+    loggingOut.value = true
+    try {
+        const refreshToken = authStore.authState.tokens.refreshToken
+        if (refreshToken) {
+            await loginApi.logout(refreshToken)
+        }
+        authStore.clearSession()
+        appStore.init()
+        menuStore.init()
+        navStore.init()
+        await router.replace('/login')
+    } catch {
+        Notification.error('Logout failed. Please check your connection and try again.')
+    } finally {
+        loggingOut.value = false
+    }
 }
 </script>
 

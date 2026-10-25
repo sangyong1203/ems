@@ -94,7 +94,7 @@ import loginApi from './service/login.api.ts'
 import { useMenuStore } from '@/stores/menu.store'
 import { useNavStore } from '@/stores/nav.store'
 import { useAuthStore } from '@/stores/auth.store'
-import type { RoleLevel } from '@/stores/auth.store'
+import type { SigninResponse } from './service/login.types'
 
 const router = useRouter()
 const formRef = ref<FormInstance | null>(null)
@@ -140,22 +140,21 @@ const isLoading = ref(false)
 const isLoginIdReadonly = ref(true)
 const isPasswordReadonly = ref(true)
 
-const normalizeRoleLevel = (value?: string): RoleLevel => {
-    if (value === 'PLATFORM_ADMIN' || value === 'USER') return value
-    return 'PLATFORM_ADMIN'
-}
-
-const completeLogin = async (signinData: any, loginId: string) => {
+// 서버의 실제 관리자 정보를 확인한 뒤 메뉴와 인증 상태를 설정합니다.
+const completeLogin = async (signinData: SigninResponse['data'], loginId: string) => {
     authStore.setTokens({
         accessToken: signinData.accessToken,
         refreshToken: signinData.refreshToken,
-        verificationToken: signinData.verificationToken,
     })
 
     const userInfoResponse = await loginApi.getUserInfo()
-    const userInfo = userInfoResponse.data ?? {}
+    const userInfo = userInfoResponse.data
     const landingPage = signinData.landingPage || userInfo.landingPage || '/dashboard'
-    const userLevel = normalizeRoleLevel(userInfo.userLevel)
+    if (userInfo.userLevel !== 'PLATFORM_ADMIN') {
+        authStore.clearSession()
+        throw new Error('Administrator access required.')
+    }
+    const userLevel = userInfo.userLevel
 
     navStore.init()
     menuStore.init()
@@ -164,11 +163,10 @@ const completeLogin = async (signinData: any, loginId: string) => {
         tokens: {
             accessToken: signinData.accessToken,
             refreshToken: signinData.refreshToken,
-            verificationToken: signinData.verificationToken,
         },
         user: {
-            loginId: userInfo.email || loginId,
-            name: userInfo.krName || userInfo.name || '',
+            loginId: userInfo.username,
+            name: userInfo.name,
             userLevel,
             email: userInfo.email || loginId,
             landingPage,
@@ -185,7 +183,7 @@ const login = () => {
         formRef.value.validate(async (valid: boolean, invalidFields?: Record<string, Array<{ message?: string }>>) => {
             if (valid) {
                 const loginId = loginForm.loginId.trim()
-                const password = loginForm.password.trim()
+                const password = loginForm.password
                 loginForm.loginId = loginId
                 loginForm.password = password
 
@@ -193,12 +191,13 @@ const login = () => {
                     username: loginId,
                     password: password,
                 }
+                authStore.clearSession()
                 isLoading.value = true
                 ElNotification.closeAll()
                 try {
                     const res = await loginApi.signin(params)
                     if (res.result == 'SUCCESS') {
-                        await completeLogin(res.data ?? {}, loginId)
+                        await completeLogin(res.data, loginId)
                     } else if (res.result == 'PASSWORD_INCORRECT') {
                         message.value = 'The password does not match. Please try again.'
                     } else if (res.result == 'INVALID_INPUT_PARAMETERS') {
@@ -207,7 +206,7 @@ const login = () => {
                         message.value = res.resultMessage || 'Login failed.'
                     }
                 } catch (err: any) {
-                    console.log('login error', err)
+                    authStore.clearSession()
                     const errorData = err?.data ?? err?.response?.data ?? err
                     const result = errorData?.result
                     if (result == 'INVALID_INPUT_PARAMETERS' || result == 'DOMAIN_NOT_ALLOWED') {
@@ -215,7 +214,7 @@ const login = () => {
                     } else if (result == 'PASSWORD_INCORRECT') {
                         message.value = 'The password does not match. Please try again.'
                     } else {
-                        message.value = errorData?.resultMessage || 'Login failed.'
+                        message.value = errorData?.resultMessage || errorData?.detail || 'Login failed.'
                     }
                 } finally {
                     isLoading.value = false
