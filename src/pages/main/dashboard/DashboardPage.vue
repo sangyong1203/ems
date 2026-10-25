@@ -21,7 +21,6 @@
                         title="전력 흐름"
                         subtitle="PV / ESS / 부하 / 계통 실시간 흐름"
                         subtitle-position="right"
-                        :value="updatedAtText"
                     >
                         <PowerFlowPalette
                             v-if="powerFlowEditorData"
@@ -257,12 +256,6 @@ const gridPowerStatus = computed(() => {
     return '계통 대기'
 })
 
-const updatedAtText = computed(() => {
-    if (!powerFlow.value?.updatedAt) {
-        return 'Updated -'
-    }
-    return `Updated ${powerFlow.value.updatedAt.replace('T', ' ').slice(0, 19)}`
-})
 
 const powerFlowDeviceCountText = computed(() => `${powerFlowEditorData.value?.devices.length ?? 0}대`)
 
@@ -482,6 +475,7 @@ onBeforeUnmount(() => {
 
 .dashboard-panel--kpi {
     min-width: 0;
+    overflow: auto;
 }
 .dashboard-panel--kpi :deep(.glass-panel__body) {
     justify-content: space-around !important;
@@ -491,8 +485,8 @@ onBeforeUnmount(() => {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
+    width: 24px;
+    height: 24px;
     padding: 0;
     border: none;
     background: transparent;
