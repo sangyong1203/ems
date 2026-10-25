@@ -5,17 +5,19 @@ import sys
 import unittest
 from datetime import timedelta
 from unittest.mock import patch
+from tempfile import TemporaryDirectory
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from app.api.router import api_router
+from app.core.config import get_initial_admin_password
 from app.core.database import Base, get_db
-from app.db.init_db import _ensure_admin_users
+from app.db.init_db import _ensure_admin_users, create_tables
 from app.domains.auth.dependencies import utc_now
 from app.domains.auth.models import AuthSession, User
 from app.domains.auth.security import hash_password, hash_token, verify_password
@@ -49,6 +51,9 @@ async def asgi_request(app, method, path, body=None, token=None):
 class AuthenticationTests(unittest.TestCase):
     # 실제 DB와 분리된 메모리 DB 및 요청별 세션을 준비합니다.
     def setUp(self):
+        self.env_directory = TemporaryDirectory()
+        self.env_root_patch = patch('app.core.config.BASE_DIR', Path(self.env_directory.name))
+        self.env_root_patch.start()
         self.engine = create_engine('sqlite://', connect_args={'check_same_thread': False}, poolclass=StaticPool)
         Base.metadata.create_all(self.engine)
         self.sessions = sessionmaker(bind=self.engine, autoflush=False)
@@ -72,6 +77,8 @@ class AuthenticationTests(unittest.TestCase):
     # 검증에 사용한 메모리 DB 연결을 해제합니다.
     def tearDown(self):
         self.engine.dispose()
+        self.env_root_patch.stop()
+        self.env_directory.cleanup()
 
     # 테스트 요청을 독립 이벤트 루프에서 실행합니다.
     def request(self, method, path, body=None, token=None):
@@ -288,6 +295,62 @@ class AuthenticationTests(unittest.TestCase):
         tokens = self.login()
         self.assertEqual(self.request('GET', '/api/project', token=tokens['accessToken'])[0], 200)
         self.assertEqual(self.request('GET', '/api/power-flow/editor', token=tokens['accessToken'])[0], 200)
+
+    # 기존 세션 테이블의 누락 컬럼을 보충하고 기존 계정과 로그인 세션을 유지하는지 확인합니다.
+    def test_existing_session_table_gets_missing_column(self):
+        tokens = self.login()
+        with self.engine.begin() as connection:
+            connection.execute(text('ALTER TABLE auth_sessions DROP COLUMN previous_refresh_token_hash'))
+        with patch('app.db.init_db.engine', self.engine):
+            create_tables()
+            create_tables()
+        columns = {column['name'] for column in inspect(self.engine).get_columns('auth_sessions')}
+        self.assertIn('previous_refresh_token_hash', columns)
+        self.assertEqual(self.request('GET', '/api/auth/me', token=tokens['accessToken'])[0], 200)
+        self.assertEqual(self.request('POST', '/api/auth/reissue', {'refreshToken': tokens['refreshToken']})[0], 200)
+        self.login()
+
+    # 서버 전용 파일의 따옴표·주석·BOM과 중복 키를 해석하며 다른 설정은 건드리지 않는지 확인합니다.
+    def test_env_file_password_supports_quotes_and_comments(self):
+        env_file = Path(self.env_directory.name) / '.env'
+        env_file.write_text("\ufeff# server settings\nOTHER=value\nINITIAL_ADMIN_PASSWORD=old-value\nexport INITIAL_ADMIN_PASSWORD='file # password' # comment\n", encoding='utf-8')
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(get_initial_admin_password(), 'file # password')
+            self.assertNotIn('INITIAL_ADMIN_PASSWORD', os.environ)
+
+    # 기존 운영체제 환경변수는 빈 값까지 파일보다 우선하는지 확인합니다.
+    def test_environment_password_takes_precedence_over_file(self):
+        (Path(self.env_directory.name) / '.env').write_text("INITIAL_ADMIN_PASSWORD=file-password\n")
+        with patch.dict(os.environ, {'INITIAL_ADMIN_PASSWORD': 'process-password'}):
+            self.assertEqual(get_initial_admin_password(), 'process-password')
+        with patch.dict(os.environ, {'INITIAL_ADMIN_PASSWORD': ''}):
+            self.assertEqual(get_initial_admin_password(), '')
+
+    # 초기 비밀번호 파일이 없거나 값이 비었을 때 미설정으로 처리하는지 확인합니다.
+    def test_missing_or_empty_env_file_password(self):
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(get_initial_admin_password(), '')
+            (Path(self.env_directory.name) / '.env').write_text('INITIAL_ADMIN_PASSWORD=\n')
+            self.assertEqual(get_initial_admin_password(), '')
+
+    # 잘못된 따옴표의 오류 메시지에 입력한 비밀번호를 노출하지 않는지 확인합니다.
+    def test_invalid_env_quotes_do_not_expose_password(self):
+        (Path(self.env_directory.name) / '.env').write_text("INITIAL_ADMIN_PASSWORD='private-value\n")
+        with patch.dict(os.environ, {}, clear=True):
+            with self.assertRaises(ValueError) as error:
+                get_initial_admin_password()
+            self.assertNotIn('private-value', str(error.exception))
+
+    # 환경변수 없이 서버 전용 파일만으로 초기 관리자를 생성할 수 있는지 확인합니다.
+    def test_bootstrap_reads_server_env_file(self):
+        (Path(self.env_directory.name) / '.env').write_text("INITIAL_ADMIN_PASSWORD='" + PASSWORD + "'\n")
+        with self.sessions() as db:
+            db.query(User).delete()
+            db.commit()
+            with patch.dict(os.environ, {}, clear=True):
+                _ensure_admin_users(db)
+                db.commit()
+            self.assertTrue(verify_password(db.query(User).one().password_hash, PASSWORD))
 
 
 if __name__ == '__main__':

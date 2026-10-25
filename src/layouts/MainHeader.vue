@@ -10,11 +10,48 @@
         </el-col>
         <el-col :span="10">
             <div class="header-right">
-                <div class="header-user">
-                    <el-icon class="header-user-icon"><User /></el-icon>
-                    <span class="header-user-name">{{ userName }}</span>
-                </div>
-                <el-button class="change-password-button" @click="emit('change-password')">Change password</el-button>
+                <el-popover
+                    v-model:visible="userPopoverVisible"
+                    placement="bottom-end"
+                    trigger="click"
+                    :width="320"
+                    @show="loadUserInfo"
+                >
+                    <template #reference>
+                        <button
+                            type="button"
+                            class="header-user"
+                            aria-label="사용자 상세 정보"
+                            aria-haspopup="dialog"
+                            :aria-expanded="userPopoverVisible"
+                        >
+                            <el-icon class="header-user-icon"><User /></el-icon>
+                            <span class="header-user-name">{{ userName }}</span>
+                            <el-icon class="header-user-arrow"><ArrowDown /></el-icon>
+                        </button>
+                    </template>
+                    <section class="header-user-profile" aria-label="사용자 상세 정보" :aria-busy="userInfoLoading">
+                        <h2 class="header-user-profile__title">사용자 정보</h2>
+                        <p v-if="userInfoLoading" class="header-user-profile__message" role="status">조회 중...</p>
+                        <div v-else-if="userInfoError" class="header-user-profile__error" role="alert">
+                            <p>{{ userInfoError }}</p>
+                            <el-button link type="primary" @click="loadUserInfo">다시 조회</el-button>
+                        </div>
+                        <dl v-else-if="userInfo" class="header-user-profile__details">
+                            <dt>이름</dt>
+                            <dd>{{ userInfo.name }}</dd>
+                            <dt>사용자 ID</dt>
+                            <dd>{{ userInfo.username }}</dd>
+                            <dt>이메일</dt>
+                            <dd>{{ userInfo.email }}</dd>
+                            <dt>역할</dt>
+                            <dd>{{ userInfo.role }}</dd>
+                        </dl>
+                        <div class="header-user-profile__actions">
+                            <el-button class="change-password-button" @click="openChangePassword">Change password</el-button>
+                        </div>
+                    </section>
+                </el-popover>
                 <el-button type="primary" circle class="logout" @click="emit('logout')">
                     <el-icon><SwitchButton /></el-icon>
                 </el-button>
@@ -24,7 +61,15 @@
 </template>
 
 <script lang="ts" setup>
-import { SwitchButton, User } from '@element-plus/icons-vue'
+import { ref } from 'vue'
+import { ArrowDown, SwitchButton, User } from '@element-plus/icons-vue'
+import loginApi from '@/pages/login/service/login.api'
+import type { UserInfo } from '@/pages/login/service/login.types'
+
+const userPopoverVisible = ref(false) // 사용자 상세 팝업 표시 여부
+const userInfo = ref<UserInfo | null>(null) // 서버가 반환한 현재 사용자 상세 정보
+const userInfoLoading = ref(false) // 사용자 상세 조회 중
+const userInfoError = ref('') // 상세 조회 실패 안내
 
 withDefaults(
     defineProps<{
@@ -43,6 +88,32 @@ const emit = defineEmits<{
     logout: []
     'change-password': []
 }>()
+
+// 팝업을 열 때마다 인증된 사용자 정보를 조회하여 최신 이름·이메일·역할을 표시합니다.
+const loadUserInfo = async () => {
+    if (userInfoLoading.value) return
+    userInfoLoading.value = true
+    userInfoError.value = ''
+    userInfo.value = null
+    try {
+        const response = await loginApi.getUserInfo()
+        if (response.result !== 'SUCCESS') {
+            userInfoError.value = '사용자 정보를 불러오지 못했습니다.'
+            return
+        }
+        userInfo.value = response.data
+    } catch {
+        userInfoError.value = '사용자 정보를 불러오지 못했습니다.'
+    } finally {
+        userInfoLoading.value = false
+    }
+}
+
+// 사용자 팝업을 닫고 기존 비밀번호 변경 창을 엽니다.
+const openChangePassword = () => {
+    userPopoverVisible.value = false
+    emit('change-password')
+}
 </script>
 
 <style scoped lang="scss">
@@ -97,6 +168,65 @@ const emit = defineEmits<{
     border-radius: 999px;
     background: var(--surface-control-color);
     color: var(--text-color--primary);
+    cursor: pointer;
+}
+
+.header-user:hover,
+.header-user:focus-visible {
+    border-color: var(--accent-color);
+}
+
+.header-user:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: 2px;
+}
+
+.header-user-arrow {
+    flex-shrink: 0;
+    font-size: 12px;
+    color: var(--text-color--secondary);
+}
+
+.header-user-profile {
+    padding: 4px;
+    color: var(--text-color--primary);
+    text-align: left;
+}
+
+.header-user-profile__title {
+    margin: 0 0 16px;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.header-user-profile__details {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 12px;
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.header-user-profile__details dt,
+.header-user-profile__message,
+.header-user-profile__error {
+    color: var(--text-color--secondary);
+}
+
+.header-user-profile__details dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.header-user-profile__actions {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+.header-user-profile__actions .change-password-button {
+    width: 100%;
 }
 
 .header-user-icon {

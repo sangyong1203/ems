@@ -1,11 +1,10 @@
-import os
-
 from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
 from .base import Base, Device, EssSystem, EssSystemBatteryRack, InverterPvStringLink, ProjectConfig, PvString, User
 from .power_flow_seed import ensure_power_flow_layout
 from ..core.database import engine
+from ..core.config import get_initial_admin_password
 from ..domains.auth.security import hash_password
 from ..domains.simulator.generator import generate_today
 
@@ -208,16 +207,16 @@ def _ensure_battery_racks(db: Session) -> None:
             )
 
 
-# 최초 관리자는 환경변수로 생성하고, 기존 평문 계정은 한 번만 Argon2 해시로 전환합니다.
+# 최초 관리자는 서버 설정으로 생성하고, 기존 평문 계정은 한 번만 Argon2 해시로 전환합니다.
 def _ensure_admin_users(db: Session) -> None:
     users = db.query(User).all()
     admin = next((user for user in users if user.username == "admin"), None)
-    initial_password = os.getenv("INITIAL_ADMIN_PASSWORD", "")  # 최초 생성 또는 기존 기본 관리자 전환에만 사용
+    initial_password = get_initial_admin_password()  # 환경변수 또는 서버 전용 .env에서 읽는 최초 설정값
     needs_admin = admin is None and not any(user.role == "Platform Admin" and user.status == "Active" for user in users)
     needs_admin_conversion = admin is not None and not admin.password_hash.startswith("$argon2id$")
     if needs_admin or needs_admin_conversion:
         if not 8 <= len(initial_password) <= 128:
-            raise RuntimeError("Set INITIAL_ADMIN_PASSWORD to 8-128 characters before initializing the administrator.")
+            raise RuntimeError("Set INITIAL_ADMIN_PASSWORD to 8-128 characters in local-server/.env or the environment before initializing the administrator.")
     if needs_admin:
         admin = User(
             username="admin", password_hash=hash_password(initial_password),
@@ -236,6 +235,11 @@ def _ensure_admin_users(db: Session) -> None:
 # 등록된 모델의 테이블을 생성하고 기존 DB의 누락 컬럼과 사용자 정보를 보정합니다.
 def create_tables() -> None:
     Base.metadata.create_all(bind=engine)
+    # 이미 생성된 인증 세션 테이블에도 동시 로그아웃 처리용 컬럼을 보충합니다.
+    session_columns = {column["name"] for column in inspect(engine).get_columns("auth_sessions")}
+    if "previous_refresh_token_hash" not in session_columns:
+        with engine.begin() as connection:
+            connection.execute(text("ALTER TABLE auth_sessions ADD COLUMN previous_refresh_token_hash VARCHAR(64)"))
     # 기존 SQLite 파일을 재사용할 수 있도록 사용자 누락 컬럼과 기본 관리자 정보를 보정합니다.
     user_columns = {column["name"] for column in inspect(engine).get_columns("users")}
     user_column_defs = {

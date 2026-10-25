@@ -60,33 +60,27 @@ local-server/solar_ems.db
 
 관리자(`Platform Admin`)만 로그인하고 업무 API를 사용할 수 있습니다. `Operator`와 `Viewer`는 로그인할 수 없습니다.
 
-최초 관리자 ID는 `admin`입니다. 최초 생성 또는 기존 평문 `admin` 계정 전환 전에 **8~128자 비밀번호**를 `INITIAL_ADMIN_PASSWORD` 환경변수로 설정하세요.
+최초 관리자 ID는 `admin`입니다. 최초 생성 또는 기존 평문 `admin` 계정 전환 전에 `local-server/.env` 파일에 **8~128자 비밀번호**를 작성하세요.
 
-macOS zsh:
-
-```zsh
-read -s "INITIAL_ADMIN_PASSWORD?초기 관리자 비밀번호: "
-export INITIAL_ADMIN_PASSWORD
-python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```dotenv
+# 예제 설명 대신 직접 정한 비밀번호를 입력하세요.
+INITIAL_ADMIN_PASSWORD='직접_정한_8~128자_비밀번호'
 ```
 
-Linux / WSL bash:
+비밀번호에 공백이나 `#`이 있으면 따옴표로 감싸세요. 파일은 자동으로 읽으며 변수 치환이나 명령 실행은 하지 않습니다. 파일을 수정한 뒤에는 서버를 재시작하세요.
+
+`local-server` 폴더에서 가상환경을 활성화한 후 다음 명령으로 실행합니다.
 
 ```bash
-read -rs -p '초기 관리자 비밀번호: ' INITIAL_ADMIN_PASSWORD
-export INITIAL_ADMIN_PASSWORD
 python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Windows PowerShell:
+- `.env`는 실행한 터미널의 현재 위치와 관계없이 `local-server/.env` 경로에서 읽습니다.
+- 운영체제에 `INITIAL_ADMIN_PASSWORD` 환경변수가 이미 설정되어 있으면 파일보다 우선합니다. 이전 터미널 설정을 제거하려면 macOS/Linux에서는 `unset INITIAL_ADMIN_PASSWORD`, PowerShell에서는 `Remove-Item Env:INITIAL_ADMIN_PASSWORD -ErrorAction SilentlyContinue`를 실행하세요.
+- 서버 전용 `.env`는 Git과 Docker 이미지에 포함하지 않습니다. Docker 배포에서는 기존처럼 `compose.deploy.yaml`과 같은 폴더의 `.env`에서 컨테이너 환경변수로 전달합니다.
 
-```powershell
-$env:INITIAL_ADMIN_PASSWORD = [System.Net.NetworkCredential]::new('', (Read-Host '초기 관리자 비밀번호' -AsSecureString)).Password
-python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-```
-
-- 기존 평문 `admin` 비밀번호는 처음 전환할 때 환경변수 값으로 교체합니다. 다른 기존 계정은 비밀번호를 유지한 채 Argon2id 해시로 전환합니다.
-- 이미 Argon2id 해시인 계정은 재시작이나 환경변수 변경으로 비밀번호가 덮어써지지 않습니다. 로그인 후 헤더의 **Change password**에서 변경하세요.
+- 기존 평문 `admin` 비밀번호는 처음 전환할 때 초기 관리자 설정값으로 교체합니다. 다른 기존 계정은 비밀번호를 유지한 채 Argon2id 해시로 전환합니다.
+- 이미 Argon2id 해시인 계정은 재시작이나 `.env`·환경변수 변경으로 비밀번호가 덮어써지지 않습니다. 로그인 후 헤더의 **Change password**에서 변경하세요.
 - 기본 비밀번호 `1111`과 샘플 사용자 자동 생성은 제거했습니다. 신규 사용자는 관리자가 초기 비밀번호를 입력합니다. 수정 시 새 비밀번호를 입력하면 재설정하고, 생략하면 유지합니다.
 - 액세스 토큰은 **1시간**, 갱신 토큰과 세션은 로그인부터 **1일** 유효합니다. 갱신해도 세션 만료일은 연장되지 않습니다.
 - DB에는 비밀번호의 Argon2id 해시와 토큰의 SHA-256 해시만 저장합니다. 기존 고정 토큰은 사용할 수 없으므로 다시 로그인해야 합니다.
@@ -501,7 +495,7 @@ seed_database(db)
 
 `seed_database()`:
 
-- 환경변수 기반 최초 관리자 생성 및 기존 평문 비밀번호의 일회성 해시 전환
+- 서버 전용 `.env` 또는 환경변수 기반 최초 관리자 생성 및 기존 평문 비밀번호의 일회성 해시 전환
 - 프로젝트 설정 생성
 - 기본 장비 생성
 - PV string 생성
