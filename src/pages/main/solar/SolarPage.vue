@@ -312,7 +312,7 @@ onBeforeUnmount(() => {
 .solar-inverter-item {
     display: flex;
     align-items: center;
-    gap: 18px;
+    gap: 12px;
     min-height: 62px;
     flex: 0 0 auto;
     padding: 12px 14px;
@@ -336,7 +336,7 @@ onBeforeUnmount(() => {
 }
 
 .solar-inverter-item__metric {
-    flex: 0 0 104px;
+    flex: 0 0 90px;
     display: flex;
     flex-direction: column;
     gap: 4px;
