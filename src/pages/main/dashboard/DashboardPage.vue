@@ -30,6 +30,7 @@
                             :placed-device-ids="dashboardPalettePlacedDeviceIds"
                             :selected-device-id="selectedFlowDeviceId"
                             @select-device="powerFlowCanvasRef?.selectDevice($event)"
+                            @open-device-detail="openDeviceDetail"
                             :editable="false"
                         />
                         <!-- <DashboardPowerFlowMap :data="powerFlow" /> -->
@@ -44,6 +45,7 @@
                             :editable="false"
                             :show-palette="false"
                             @selection-change="handleFlowSelection"
+                            @open-device-detail="openDeviceDetail"
                         >
                             <template #actions>
                                 <button
@@ -127,6 +129,12 @@
         v-model="isFlowExpanded"
         :layout="powerFlowLayout"
         :editor-data="powerFlowEditorData"
+        @open-device-detail="openDeviceDetail"
+    />
+    <PowerFlowDeviceDetailDialog
+        v-model="isDeviceDetailOpen"
+        :device="detailDevice"
+        :layout="powerFlowLayout"
     />
 </template>
 
@@ -136,6 +144,7 @@ import { EssPowerChart, GlassPanel, TrendAreaChart } from '@/components'
 import PowerFlowCanvas from '@/features/powerFlow/components/PowerFlowCanvas.vue'
 import PowerFlowFullscreenDialog from '@/features/powerFlow/components/PowerFlowFullscreenDialog.vue'
 import PowerFlowPalette from '@/features/powerFlow/components/PowerFlowPalette.vue'
+import PowerFlowDeviceDetailDialog from '@/features/powerFlow/components/PowerFlowDeviceDetailDialog.vue'
 import type { PowerFlowEditorData, PowerFlowLayout, PowerFlowSelection } from '@/features/powerFlow/service/powerFlow.types'
 import { isSuccessResponse } from '@/utils'
 import DashboardPowerChart from './components/DashboardPowerChart.vue'
@@ -148,6 +157,15 @@ const DEFAULT_REFRESH_INTERVAL = 10000 // 기본 데이터 갱신 주기 (10초)
 const dashboardPalettePlacedDeviceIds: number[] = []
 const powerFlowCanvasRef = ref<InstanceType<typeof PowerFlowCanvas> | null>(null) // 목록 선택을 전달할 흐름도
 const selectedFlowDeviceId = ref<number | null>(null) // 흐름도와 목록에서 강조할 장비 ID
+const isDeviceDetailOpen = ref(false) // 장비 상세 창 표시 여부
+const detailDeviceId = ref<number | null>(null) // 상세 창에 표시할 장비 ID
+const detailDevice = computed(() => powerFlowEditorData.value?.devices.find(device => device.id === detailDeviceId.value) ?? null) // 갱신된 장비 상세정보
+
+// 목록이나 흐름도에서 더블클릭한 장비의 상세 창을 엽니다.
+const openDeviceDetail = (deviceId: number) => {
+    detailDeviceId.value = deviceId
+    isDeviceDetailOpen.value = true
+}
 
 // 흐름도에서 직접 선택하거나 선택을 해제하면 목록의 강조 상태도 동기화합니다.
 const handleFlowSelection = (selection: PowerFlowSelection) => {

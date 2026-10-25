@@ -49,6 +49,7 @@
                             :editable="editable"
                             :connected-anchors="connectedAnchors(node.client_id)"
                             @select="selectNode"
+                            @dblclick.stop="emit('open-device-detail', node.device_id)"
                             @drag-start="startNodeDrag"
                             @anchor-start="startWire"
                             @anchor-end="completeWireToNode"
@@ -215,6 +216,7 @@ const props = withDefaults(
 const emit = defineEmits<{
     'update:modelValue': [layout: PowerFlowLayout]
     'selection-change': [selection: PowerFlowSelection]
+    'open-device-detail': [deviceId: number] // 더블클릭한 장비의 상세 창 열기
 }>()
 
 const cloneLayout = (layout: PowerFlowLayout): PowerFlowLayout => JSON.parse(JSON.stringify(layout))

@@ -15,6 +15,7 @@
                 :aria-pressed="selectedDeviceId === device.id"
                 :draggable="editable"
                 @click="emit('select-device', device.id)"
+                @dblclick.stop="emit('open-device-detail', device.id)"
                 @keydown.enter.prevent="emit('select-device', device.id)"
                 @keydown.space.prevent="emit('select-device', device.id)"
                 @dragstart="handleDragStart($event, device)"
@@ -50,6 +51,7 @@ const props = defineProps<{
 // 목록에서 상세정보를 표시할 장비를 선택합니다.
 const emit = defineEmits<{
     'select-device': [deviceId: number]
+    'open-device-detail': [deviceId: number] // 더블클릭한 장비의 상세 창 열기
 }>()
 
 const availableDevices = computed(() => props.devices.filter(device => !props.placedDeviceIds.includes(device.id)))

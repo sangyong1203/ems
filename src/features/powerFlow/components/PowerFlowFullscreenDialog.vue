@@ -17,6 +17,7 @@
             :device-telemetry="editorData.device_telemetry"
             :editable="false"
             :show-palette="false"
+            @open-device-detail="emit('open-device-detail', $event)"
         />
     </el-dialog>
 </template>
@@ -33,6 +34,7 @@ defineProps<{
 
 const emit = defineEmits<{
     'update:modelValue': [visible: boolean] // 다이얼로그 닫힘 상태 동기화
+    'open-device-detail': [deviceId: number] // 확대 흐름도에서 더블클릭한 장비 상세 요청
 }>()
 </script>
 
