@@ -163,6 +163,18 @@ const logOut = async () => {
     padding: 0;
 }
 
+@media (max-width: 767px) {
+    .side-brand {
+        padding-right: 64px;
+    }
+
+    .side-title {
+        overflow: hidden;
+        font-size: 20px;
+        text-overflow: ellipsis;
+    }
+}
+
 .main-sidebar.is-collapse .side-title {
     opacity: 0;
     width: 0;

@@ -6,12 +6,23 @@
         <el-drawer
             v-if="isMobile"
             v-model="mobileMenuOpen"
-            title="메뉴"
+            aria-label="메뉴 탐색"
+            :with-header="false"
+            :show-close="false"
             direction="ltr"
             size="min(320px, 88vw)"
             class="mobile-navigation-drawer"
             append-to-body
         >
+            <button
+                type="button"
+                class="mobile-navigation-close"
+                title="메뉴 닫기"
+                aria-label="메뉴 닫기"
+                @click="mobileMenuOpen = false"
+            >
+                <el-icon><ArrowLeft /></el-icon>
+            </button>
             <slot name="sidebar" :mobile="true"></slot>
         </el-drawer>
         <el-container class="right-wrapper">
@@ -202,7 +213,32 @@ watch(
 }
 
 :global(.mobile-navigation-drawer .el-drawer__body) {
+    position: relative;
     padding: 0;
     overflow: hidden;
 }
+
+.mobile-navigation-close {
+    position: absolute;
+    z-index: 1;
+    top: 14px;
+    right: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--text-color--primary);
+    font-size: 22px;
+    cursor: pointer;
+}
+
+.mobile-navigation-close:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: -2px;
+}
+
 </style>
