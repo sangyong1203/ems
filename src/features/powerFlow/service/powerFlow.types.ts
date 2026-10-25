@@ -77,6 +77,7 @@ export type PowerFlowLayoutSaveBody = Omit<PowerFlowLayout, 'id' | 'name'>
 
 // 흐름도에서 선택한 항목
 export type PowerFlowSelection = {
+    deviceId: number | null // 목록에서 선택한 장비 ID, 선택하지 않으면 null
     nodeIds: string[] // 선택한 장비 노드의 클라이언트 ID
     wireId: string // 선택한 연결선 ID, 선택하지 않으면 빈 문자열
     junctionId: string // 선택한 분기점 ID, 선택하지 않으면 빈 문자열

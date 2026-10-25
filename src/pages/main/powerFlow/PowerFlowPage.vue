@@ -98,7 +98,7 @@ const draftLayout = ref<PowerFlowLayout | null>(null) // 편집 중인 임시 �
 const isEditMode = ref(false) // 다이어그램 편집 모드 여부
 let pollingTimer: number | undefined // 주기적 데이터 갱신 타이머
 
-const selection = ref<PowerFlowSelection>({ nodeIds: [], wireId: '', junctionId: '' }) // 캔버스 선택 항목 ID
+const selection = ref<PowerFlowSelection>({ deviceId: null, nodeIds: [], wireId: '', junctionId: '' }) // 캔버스 선택 항목 ID
 
 // 저장된 레이아웃과 편집 초안을 분리합니다.
 const cloneLayout = (layout: PowerFlowLayout): PowerFlowLayout => JSON.parse(JSON.stringify(layout))
@@ -136,16 +136,20 @@ const selectionItems = computed(() => {
     }
     const nodes = layout.nodes.filter(node => selection.value.nodeIds.includes(node.client_id))
     if (nodes.length > 1) return [{ label: '선택 장비', value: `${nodes.length}대` }]
-    if (nodes.length === 1) {
-        const node = nodes[0]
-        const device = editorData.value?.devices.find(item => item.id === node?.device_id)
-        if (device && node) {
+    if (nodes.length === 1 || selection.value.deviceId !== null) {
+        const node = selection.value.deviceId !== null
+            ? layout.nodes.find(item => item.device_id === selection.value.deviceId)
+            : nodes[0]
+        const deviceId = selection.value.deviceId ?? node?.device_id
+        const device = editorData.value?.devices.find(item => item.id === deviceId)
+        if (device) {
             const items = [
                 { label: '장비 ID', value: String(device.id) },
                 { label: '장비 이름', value: device.name },
                 { label: '장비 종류', value: deviceVisual(device.device_type).label },
                 { label: '장비 상태', value: deviceStatusLabel(device) },
                 { label: '사용 여부', value: device.is_active ? '사용' : '미사용' },
+                { label: '배치 여부', value: node ? '배치됨' : '미배치' },
                 {
                     label: '측정값',
                     value: device.display_value == null
@@ -155,8 +159,8 @@ const selectionItems = computed(() => {
                 {
                     label: '연결선 수',
                     value: `${layout.wires.filter(item =>
-                        (item.source_type === 'NODE' && item.source_ref === node.client_id) ||
-                        (item.target_type === 'NODE' && item.target_ref === node.client_id),
+                        (item.source_type === 'NODE' && item.source_ref === node?.client_id) ||
+                        (item.target_type === 'NODE' && item.target_ref === node?.client_id),
                     ).length}개`,
                 },
             ]

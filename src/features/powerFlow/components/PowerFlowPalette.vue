@@ -2,14 +2,21 @@
     <aside class="power-flow-palette" :class="{ 'is-disabled': !editable }">
         <header class="power-flow-palette__header">
             <h3>장비 목록</h3>
-            <span>{{ availableDevices.length }}대</span>
+            <span class="power-flow-palette__count"><small>미배치 장비</small> {{ availableDevices.length }}대</span>
         </header>
         <div class="power-flow-palette__list">
             <article
                 v-for="device in availableDevices"
                 :key="device.id"
                 class="power-flow-palette__item"
+                :class="{ 'is-selected': selectedDeviceId === device.id }"
+                role="button"
+                tabindex="0"
+                :aria-pressed="selectedDeviceId === device.id"
                 :draggable="editable"
+                @click="emit('select-device', device.id)"
+                @keydown.enter.prevent="emit('select-device', device.id)"
+                @keydown.space.prevent="emit('select-device', device.id)"
                 @dragstart="handleDragStart($event, device)"
             >
                 <div class="power-flow-palette__icon">
@@ -37,6 +44,12 @@ const props = defineProps<{
     devices: PowerFlowDeviceItem[]
     placedDeviceIds: number[]
     editable?: boolean
+    selectedDeviceId?: number | null // 상세 패널에 표시할 장비 ID
+}>()
+
+// 목록에서 상세정보를 표시할 장비를 선택합니다.
+const emit = defineEmits<{
+    'select-device': [deviceId: number]
 }>()
 
 const availableDevices = computed(() => props.devices.filter(device => !props.placedDeviceIds.includes(device.id)))
@@ -94,6 +107,18 @@ const handleDragStart = (event: DragEvent, device: PowerFlowDeviceItem) => {
     font-size: 13px;
 }
 
+.power-flow-palette__count {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+.power-flow-palette__count small {
+    color: var(--text-color--secondary);
+    font-size: 11px;
+}
+
 .power-flow-palette__list {
     display: flex;
     flex-direction: column;
@@ -116,6 +141,16 @@ const handleDragStart = (event: DragEvent, device: PowerFlowDeviceItem) => {
 
 .power-flow-palette__item:active {
     cursor: grabbing;
+}
+
+.power-flow-palette__item.is-selected {
+    border-color: var(--primary-color);
+    background: var(--layout-menu-active-bg-color);
+}
+
+.power-flow-palette__item:focus-visible {
+    outline: 2px solid var(--accent-color);
+    outline-offset: -2px;
 }
 
 .power-flow-palette__icon {

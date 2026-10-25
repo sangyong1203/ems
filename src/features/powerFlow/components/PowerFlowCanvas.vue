@@ -5,6 +5,8 @@
             :devices="devices"
             :placed-device-ids="placedDeviceIds"
             :editable="editable"
+            :selected-device-id="selectedPaletteDeviceId"
+            @select-device="selectPaletteDevice"
         />
 
         <div ref="canvasRef" class="power-flow-canvas" :class="{ 'is-readonly': !editable }">
@@ -220,6 +222,7 @@ const layout = ref<PowerFlowLayout>(cloneLayout(props.modelValue))
 const canvasRef = ref<HTMLDivElement | null>(null)
 const scrollRef = ref<HTMLDivElement | null>(null)
 const viewportSize = ref({ width: 0, height: 0 })
+const selectedPaletteDeviceId = ref<number | null>(null) // 목록에서 선택한 장비 ID
 const selectedNodeIds = ref<string[]>([])
 const selectedWireId = ref('')
 const selectedJunctionId = ref('')
@@ -227,6 +230,7 @@ const selectedJunctionId = ref('')
 // 선택 변경을 외부 편집 정보 패널과 동기화합니다.
 watch(
     () => ({
+        deviceId: selectedPaletteDeviceId.value,
         nodeIds: [...selectedNodeIds.value],
         wireId: selectedWireId.value,
         junctionId: selectedJunctionId.value,
@@ -640,12 +644,14 @@ const clearNodeSelection = () => {
 }
 
 const selectSingleNode = (nodeId: string) => {
+    selectedPaletteDeviceId.value = null
     selectedNodeIds.value = [nodeId]
     selectedWireId.value = ''
     selectedJunctionId.value = ''
 }
 
 const toggleNodeSelection = (nodeId: string) => {
+    selectedPaletteDeviceId.value = null
     selectedWireId.value = ''
     selectedJunctionId.value = ''
     if (selectedNodeIds.value.includes(nodeId)) {
@@ -886,21 +892,30 @@ const selectNode = (event: MouseEvent, nodeId: string) => {
 }
 
 const selectWire = (wireId: string) => {
+    selectedPaletteDeviceId.value = null
     selectedWireId.value = wireId
     clearNodeSelection()
     selectedJunctionId.value = ''
 }
 
 const selectJunction = (junctionId: string) => {
+    selectedPaletteDeviceId.value = null
     selectedJunctionId.value = junctionId
     clearNodeSelection()
     selectedWireId.value = ''
 }
 
 const clearSelection = () => {
+    selectedPaletteDeviceId.value = null
     clearNodeSelection()
     selectedWireId.value = ''
     selectedJunctionId.value = ''
+}
+
+// 목록 선택 시 흐름도의 선택을 해제하고 장비 상세정보를 표시합니다.
+const selectPaletteDevice = (deviceId: number) => {
+    clearSelection()
+    selectedPaletteDeviceId.value = deviceId
 }
 
 const handleCanvasClick = () => {
