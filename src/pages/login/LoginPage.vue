@@ -106,7 +106,7 @@ const navStore = useNavStore()
 const authStore = useAuthStore()
 const loginForm = reactive({
     loginId: 'admin', // 테스트용 기본 아이디
-    password: '1111', // 테스트용 기본 비밀번호
+    password: import.meta.env.VITE_TEST_LOGIN_PASSWORD ?? '1111', // 개발 환경 설정 또는 Vercel 테스트 비밀번호
     isSaveId: false,
 })
 const rules: FormRules = {
