@@ -58,7 +58,7 @@ import type { UploadProps, UploadUserFile } from 'element-plus'
 import { ref } from 'vue'
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth.store'
-import { ElLoading } from 'element-plus'
+import { ElLoading, ElMessage, ElMessageBox } from 'element-plus'
 
 const emits = defineEmits(['uploadDone'])
 

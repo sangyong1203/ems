@@ -58,6 +58,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import type { Sort } from 'element-plus'
 import { dateFormat } from '@/utils'
 
 type Align = 'left' | 'center' | 'right'
@@ -194,7 +195,8 @@ const handleRowClick = (row: any, column: any, event: MouseEvent) => {
     emits('row-click', row, event)
 }
 
-const handleSortChange = ({ prop, order }: { prop: string; order: string | null }) => {
+// 정렬 대상이 있는 경우에만 정렬 변경 이벤트를 전달합니다.
+const handleSortChange = ({ prop, order }: { prop: string | null; order: Sort['order'] | null }) => {
     if (!prop) return
     const event = {
         columnName: prop,
