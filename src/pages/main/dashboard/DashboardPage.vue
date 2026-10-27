@@ -18,10 +18,27 @@
                     </GlassPanel> -->
                     <GlassPanel
                         class="dashboard-panel--power-flow"
+                        v-loading="isFlowLoading"
+                        :aria-busy="isFlowLoading"
+                        element-loading-text="전력 흐름을 불러오는 중입니다..."
+                        :element-loading-svg="loadingSvgContent"
+                        :element-loading-svg-view-box="loadingSvgViewBox"
+                        element-loading-background="rgba(15, 18, 30, 0.88)"
                         title="전력 흐름"
                         subtitle="PV / ESS / 부하 / 계통 실시간 흐름"
                         subtitle-position="right"
                     >
+                        <div v-if="flowLoadError" class="dashboard-flow-status" role="status">
+                            <p>{{ flowLoadError }}</p>
+                            <el-button @click="getDashboardData">다시 시도</el-button>
+                        </div>
+                        <div
+                            v-else-if="isFlowReady && !powerFlowLayout?.nodes.length && !powerFlowLayout?.junctions.length"
+                            class="dashboard-flow-status"
+                            role="status"
+                        >
+                            등록된 전력 흐름 배치가 없습니다.
+                        </div>
                         <PowerFlowPalette
                             v-if="powerFlowEditorData"
                             class="dashboard-power-flow-palette"
@@ -43,6 +60,7 @@
                             :device-telemetry="powerFlowEditorData.device_telemetry"
                             :editable="false"
                             :show-palette="false"
+                            @ready="isFlowReady = true"
                             @selection-change="handleFlowSelection"
                             @open-device-detail="openDeviceDetail"
                         >
@@ -139,6 +157,8 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { vLoading } from 'element-plus'
+import { loadingSvgContent, loadingSvgViewBox } from '@/composables/useProgressBar'
 import { EssPowerChart, GlassPanel, TrendAreaChart } from '@/components'
 import PowerFlowCanvas from '@/features/powerFlow/components/PowerFlowCanvas.vue'
 import PowerFlowFullscreenDialog from '@/features/powerFlow/components/PowerFlowFullscreenDialog.vue'
@@ -172,6 +192,9 @@ const handleFlowSelection = (selection: PowerFlowSelection) => {
     selectedFlowDeviceId.value = selection.deviceId ?? node?.device_id ?? null
 }
 
+const isFlowReady = ref(false) // 최초 캔버스 배치 완료 여부
+const flowLoadError = ref('') // 최초 전력 흐름 조회 실패 안내
+const isFlowLoading = computed(() => !isFlowReady.value && !flowLoadError.value) // 데이터 조회와 최초 배치 중 표시
 const isFlowExpanded = ref(false) // 전력 흐름 전체 화면 표시 여부
 const summary = ref<DashboardSummary | null>(null) // 대시보드 요약 지표
 const powerFlow = ref<DashboardPowerFlow | null>(null) // 실시간 전력 흐름 데이터
@@ -305,7 +328,7 @@ const essStatusItems = computed(() => [
 ])
 
 // 대시보드 요약, 전력 흐름, 시계열 추이 데이터를 일괄 조회합니다.
-const getDashboardData = async () => {
+const loadDashboardData = async () => {
     const [
         summaryRes,
         powerFlowRes,
@@ -339,6 +362,9 @@ const getDashboardData = async () => {
     if (isSuccessResponse(powerFlowEditorRes.result)) {
         powerFlowEditorData.value = powerFlowEditorRes.data
         powerFlowLayout.value = JSON.parse(JSON.stringify(powerFlowEditorRes.data.layout))
+        flowLoadError.value = ''
+    } else if (!powerFlowEditorData.value) {
+        flowLoadError.value = '전력 흐름을 불러오지 못했습니다. 다시 시도해 주세요.'
     }
 
     if (isSuccessResponse(solarHistoryRes.result)) {
@@ -363,6 +389,20 @@ const getDashboardData = async () => {
 
     if (isSuccessResponse(gridImportHistoryRes.result)) {
         gridImportHistory.value = gridImportHistoryRes.data
+    }
+}
+
+// 초기 조회 실패 시 안내를 표시하고 이후 재시도와 자동 갱신을 유지합니다.
+const getDashboardData = async () => {
+    if (!powerFlowEditorData.value) {
+        flowLoadError.value = ''
+    }
+    try {
+        await loadDashboardData()
+    } catch {
+        if (!powerFlowEditorData.value) {
+            flowLoadError.value = '전력 흐름을 불러오지 못했습니다. 다시 시도해 주세요.'
+        }
     }
 }
 
@@ -442,6 +482,19 @@ onBeforeUnmount(() => {
     :deep(.glass-panel__body) {
         gap: 8px;
     }
+}
+
+.dashboard-flow-status {
+    position: absolute;
+    inset: 64px 20px 20px;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: var(--text-color--primary);
+    text-align: center;
 }
 
 .dashboard-power-flow-palette {

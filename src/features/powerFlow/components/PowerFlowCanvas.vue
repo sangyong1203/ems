@@ -214,6 +214,7 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
+    ready: [] // 최초 크기 측정과 화면 맞춤 완료
     'update:modelValue': [layout: PowerFlowLayout]
     'selection-change': [selection: PowerFlowSelection]
     'open-device-detail': [deviceId: number] // 더블클릭한 장비의 상세 창 열기
@@ -612,6 +613,7 @@ const scheduleInitialFit = async () => {
         await fitToContent()
         hasAppliedInitialFit.value = true
         fitFrameId = null
+        emit('ready')
     })
 }
 
