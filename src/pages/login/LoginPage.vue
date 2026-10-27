@@ -255,31 +255,18 @@ $text-color: rgba(255, 255, 255, 0.92);
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background:
-        linear-gradient(120deg, rgba(234, 220, 190, 0.28), rgba(8, 18, 32, 0.58)),
-        url('@/assets/images/login-bg-image.png') center / cover no-repeat;
+    background: #040711;
+    animation: loginSceneEnter 900ms ease-out both;
 
-    &::before,
     &::after {
         content: '';
         position: absolute;
         pointer-events: none;
-    }
-
-    &::before {
-        inset: -24px;
-        filter: blur(10px) saturate(0.95);
-        opacity: 0.72;
-        transform: scale(1.02);
-    }
-
-    &::after {
         inset: 0;
         z-index: 1;
         background: radial-gradient(circle at 58% 35%, rgba(255, 255, 255, 0.18), transparent 26%),
             radial-gradient(circle at 30% 72%, rgba(42, 15, 66, 0.2), transparent 38%), rgba(4, 9, 17, 0.15);
     }
-
 
     :deep(input:-webkit-autofill),
     :deep(input:-webkit-autofill:hover),
@@ -290,7 +277,6 @@ $text-color: rgba(255, 255, 255, 0.92);
         transition: background-color 9999s ease-in-out 0s;
     }
 }
-
 
 .login-autofill-blocker {
     position: absolute;
@@ -534,21 +520,33 @@ $text-color: rgba(255, 255, 255, 0.92);
 }
 
 .fade-in {
-    animation: glassEnter 520ms ease-out both;
+    animation: glassEnter 900ms cubic-bezier(0.22, 1, 0.36, 1) 100ms both;
 }
 
 .fade-in .login-header,
 .fade-in .login,
 .fade-in .find-password {
-    animation: contentFadeIn 620ms ease-out 80ms both;
+    animation: contentFadeIn 800ms ease-out 200ms both;
+}
+
+@keyframes loginSceneEnter {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 @keyframes glassEnter {
     from {
-        transform: translateY(30px);
+        opacity: 0;
+        transform: translateY(12px);
     }
 
     to {
+        opacity: 1;
         transform: translateY(0);
     }
 }
@@ -556,12 +554,22 @@ $text-color: rgba(255, 255, 255, 0.92);
 @keyframes contentFadeIn {
     from {
         opacity: 0;
-        transform: translateY(18px);
+        transform: translateY(8px);
     }
 
     to {
         opacity: 1;
         transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .layout-login,
+    .fade-in,
+    .fade-in .login-header,
+    .fade-in .login,
+    .fade-in .find-password {
+        animation: none;
     }
 }
 

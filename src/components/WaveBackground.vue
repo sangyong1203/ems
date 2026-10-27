@@ -256,7 +256,15 @@ onUnmounted(() => {
     overflow: hidden;
     pointer-events: none;
     z-index: 0;
-    background: #040711 url('@/assets/images/login-bg-image.png') center / cover no-repeat;
+    background: #040711;
+
+    &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: url('@/assets/images/login-bg-image.png') center / cover no-repeat;
+        animation: waveReveal 1200ms ease-out both;
+    }
 }
 
 .wave-canvas {
@@ -268,9 +276,26 @@ onUnmounted(() => {
     pointer-events: none;
     z-index: 1;
     opacity: 0;
-    transition: opacity 0.5s ease-in-out;
 
     &.is-ready {
+        animation: waveReveal 1200ms ease-out both;
+    }
+}
+
+@keyframes waveReveal {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .wave-background-container::before,
+    .wave-canvas.is-ready {
+        animation: none;
         opacity: 1;
     }
 }
