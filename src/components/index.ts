@@ -42,3 +42,6 @@ export { default as ChartPiechart } from './widget/ChartPiechart.vue'
 export { default as ChartSortBarchart } from './widget/ChartSortBarchart.vue'
 export { default as ChartLineBarchart } from './widget/ChartLineBarchart.vue'
 export { default as ChartLinechart } from './widget/ChartLineBarchart.vue'
+
+// 로그인 화면의 배경 이미지에 물결 애니메이션을 적용합니다.
+export { default as WaveBackground } from './WaveBackground.vue'

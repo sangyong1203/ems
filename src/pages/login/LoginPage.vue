@@ -1,5 +1,7 @@
 <template>
     <div class="layout-login">
+        <WaveBackground />
+
         <div class="login-block fade-in">
             <div class="login-block-content">
                 <div class="login-header">
@@ -89,6 +91,7 @@ import { ref, onMounted, reactive } from 'vue'
 import type { FormRules, FormInstance } from 'element-plus'
 import { ElNotification } from 'element-plus'
 import { useRouter } from 'vue-router'
+import { WaveBackground } from '@/components'
 import PasswordResetDialog from './PasswordResetDialog.vue'
 import loginApi from './service/login.api.ts'
 import { useMenuStore } from '@/stores/menu.store'
@@ -235,6 +238,7 @@ const passwordReset = () => {
 </script>
 
 <style lang="scss" scoped>
+$text-color: rgba(255, 255, 255, 0.92);
 .layout-login {
     --primary-color: #b446d2;
     --glass-border-color: rgba(180, 70, 210, 0.4);
@@ -264,7 +268,6 @@ const passwordReset = () => {
 
     &::before {
         inset: -24px;
-        background: url('@/assets/images/login-bg-image.png') center / cover no-repeat;
         filter: blur(10px) saturate(0.95);
         opacity: 0.72;
         transform: scale(1.02);
@@ -272,10 +275,11 @@ const passwordReset = () => {
 
     &::after {
         inset: 0;
-        background:
-            radial-gradient(circle at 58% 35%, rgba(255, 255, 255, 0.18), transparent 26%),
-            radial-gradient(circle at 30% 72%, rgba(42, 15, 66, 0.38), transparent 38%), rgba(4, 9, 17, 0.32);
+        z-index: 1;
+        background: radial-gradient(circle at 58% 35%, rgba(255, 255, 255, 0.18), transparent 26%),
+            radial-gradient(circle at 30% 72%, rgba(42, 15, 66, 0.2), transparent 38%), rgba(4, 9, 17, 0.15);
     }
+
 
     :deep(input:-webkit-autofill),
     :deep(input:-webkit-autofill:hover),
@@ -286,6 +290,7 @@ const passwordReset = () => {
         transition: background-color 9999s ease-in-out 0s;
     }
 }
+
 
 .login-autofill-blocker {
     position: absolute;
@@ -299,7 +304,7 @@ const passwordReset = () => {
 
 .login-block {
     position: relative;
-    z-index: 1;
+    z-index: 2;
     display: flex;
     flex: 1;
     flex-direction: column;
@@ -337,8 +342,7 @@ const passwordReset = () => {
 
     &::before {
         inset: 0;
-        background:
-            linear-gradient(25deg, rgba(255, 255, 255, 0.22), transparent 42%),
+        background: linear-gradient(25deg, rgba(255, 255, 255, 0.22), transparent 42%),
             radial-gradient(circle at -5% 0%, rgba(140, 129, 243, 0.22), transparent 22%);
     }
 }
@@ -358,22 +362,21 @@ const passwordReset = () => {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
+    gap: 12px;
     width: 100%;
 
     p:not(.login-header-content) {
         color: rgba(255, 255, 255, 0.76);
         text-shadow: 0 1px 12px rgba(0, 0, 0, 0.24);
-        font-size: 24px;
+        font-size: 16px;
         font-weight: 400;
     }
 }
 
 .login-header-content {
     width: 100%;
-    color: rgba(255, 255, 255, 0.92);
-    font-size: 70px;
-    font-weight: lighter;
+    color: $text-color;
+    font-size: 72px;
     text-align: center;
     text-shadow: 0 2px 18px rgba(0, 0, 0, 0.3);
 }
@@ -470,7 +473,7 @@ const passwordReset = () => {
     width: 100%;
     height: 64px !important;
     margin-top: 40px;
-    color: var(--button-text-color) !important;
+    color: $text-color !important;
     font-size: 20px;
     font-weight: lighter;
     background: rgba(18, 2, 37, 0.58);
