@@ -36,7 +36,6 @@ import ChangePassword from '@/pages/login/ChangePassword.vue'
 import loginApi from '@/pages/login/service/login.api'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import { LeftMenu } from '@/components'
-import { Notification } from '@/composables/useFeedback'
 import { useAppStore } from '@/stores/app.store'
 import { useAuthStore } from '@/stores/auth.store'
 import { useMenuStore } from '@/stores/menu.store'
@@ -117,7 +116,7 @@ const logOut = async () => {
                     throw new Error('Server session revocation was not confirmed.')
                 }
             } catch {
-                Notification.warning('Signed out on this device. Server session revocation could not be confirmed.')
+                // 서버 응답과 관계없이 별도 알림 없이 이 기기의 로그아웃을 진행합니다.
             }
         }
         authStore.clearSession()
