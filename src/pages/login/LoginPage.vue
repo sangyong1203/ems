@@ -105,8 +105,8 @@ const menuStore = useMenuStore()
 const navStore = useNavStore()
 const authStore = useAuthStore()
 const loginForm = reactive({
-    loginId: '',
-    password: '',
+    loginId: 'admin', // 테스트용 기본 아이디
+    password: '1111', // 테스트용 기본 비밀번호
     isSaveId: false,
 })
 const rules: FormRules = {
