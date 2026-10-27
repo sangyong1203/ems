@@ -1,0 +1,10 @@
+local-server/
+deploy/
+data/
+release/
+.env
+.env.*
+.git/
+.agents/
+.codex/
+.aws/

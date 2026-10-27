@@ -104,22 +104,27 @@ const userDisplayName = computed(() => {
     return user?.name || user?.email || user?.loginId || 'User'
 })
 
-// 서버에서 세션 폐기를 확인한 뒤 프론트 인증 상태와 메뉴를 초기화합니다.
+// 서버 세션 폐기를 요청하고, 실패해도 이 기기의 인증 상태와 메뉴는 초기화합니다.
 const logOut = async () => {
     if (loggingOut.value) return
     loggingOut.value = true
     try {
         const refreshToken = authStore.authState.tokens.refreshToken
         if (refreshToken) {
-            await loginApi.logout(refreshToken)
+            try {
+                const response = await loginApi.logout(refreshToken)
+                if (response.result !== 'SUCCESS' || !response.data?.loggedOut) {
+                    throw new Error('Server session revocation was not confirmed.')
+                }
+            } catch {
+                Notification.warning('Signed out on this device. Server session revocation could not be confirmed.')
+            }
         }
         authStore.clearSession()
         appStore.init()
         menuStore.init()
         navStore.init()
         await router.replace('/login')
-    } catch {
-        Notification.error('Logout failed. Please check your connection and try again.')
     } finally {
         loggingOut.value = false
     }

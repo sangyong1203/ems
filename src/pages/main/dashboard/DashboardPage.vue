@@ -18,64 +18,68 @@
                     </GlassPanel> -->
                     <GlassPanel
                         class="dashboard-panel--power-flow"
-                        v-loading="isFlowLoading"
-                        :aria-busy="isFlowLoading"
-                        element-loading-text="전력 흐름을 불러오는 중입니다..."
-                        :element-loading-svg="loadingSvgContent"
-                        :element-loading-svg-view-box="loadingSvgViewBox"
-                        element-loading-background="rgba(15, 18, 30, 0.88)"
                         title="전력 흐름"
                         subtitle="PV / ESS / 부하 / 계통 실시간 흐름"
                         subtitle-position="right"
                     >
-                        <div v-if="flowLoadError" class="dashboard-flow-status" role="status">
-                            <p>{{ flowLoadError }}</p>
-                            <el-button @click="getDashboardData">다시 시도</el-button>
-                        </div>
                         <div
-                            v-else-if="isFlowReady && !powerFlowLayout?.nodes.length && !powerFlowLayout?.junctions.length"
-                            class="dashboard-flow-status"
-                            role="status"
+                            class="dashboard-flow-content"
+                            v-loading="isFlowLoading"
+                            :aria-busy="isFlowLoading"
+                            element-loading-text="전력 흐름을 불러오는 중입니다..."
+                            :element-loading-svg="loadingSvgContent"
+                            :element-loading-svg-view-box="loadingSvgViewBox"
+                            element-loading-background="rgba(15, 18, 30, 0.88)"
                         >
-                            등록된 전력 흐름 배치가 없습니다.
+                            <div v-if="flowLoadError" class="dashboard-flow-status" role="status">
+                                <p>{{ flowLoadError }}</p>
+                                <el-button @click="getDashboardData">다시 시도</el-button>
+                            </div>
+                            <div
+                                v-else-if="isFlowReady && !powerFlowLayout?.nodes.length && !powerFlowLayout?.junctions.length"
+                                class="dashboard-flow-status"
+                                role="status"
+                            >
+                                등록된 전력 흐름 배치가 없습니다.
+                            </div>
+                            <PowerFlowPalette
+                                v-if="powerFlowEditorData"
+                                class="dashboard-power-flow-palette"
+                                :devices="powerFlowEditorData.devices"
+                                :placed-device-ids="dashboardPalettePlacedDeviceIds"
+                                :selected-device-id="selectedFlowDeviceId"
+                                @select-device="powerFlowCanvasRef?.selectDevice($event)"
+                                @open-device-detail="openDeviceDetail"
+                                :editable="false"
+                            />
+                            <!-- <DashboardPowerFlowMap :data="powerFlow" /> -->
+                            <PowerFlowCanvas
+                                ref="powerFlowCanvasRef"
+                                class="dashboard-flow-canvas"
+                                v-if="powerFlowLayout && powerFlowEditorData"
+                                :model-value="powerFlowLayout"
+                                :devices="powerFlowEditorData.devices"
+                                :telemetry="powerFlowEditorData.telemetry"
+                                :device-telemetry="powerFlowEditorData.device_telemetry"
+                                :editable="false"
+                                :show-palette="false"
+                                @ready="isFlowReady = true"
+                                @selection-change="handleFlowSelection"
+                                @open-device-detail="openDeviceDetail"
+                            >
+                                <template #actions>
+                                    <button
+                                        type="button"
+                                        class="dashboard-flow-expand-button"
+                                        title="전체 화면으로 펼치기"
+                                        aria-label="전체 화면으로 펼치기"
+                                        @click.stop="isFlowExpanded = true"
+                                    >
+                                        <el-icon><FullScreen /></el-icon>
+                                    </button>
+                                </template>
+                            </PowerFlowCanvas>
                         </div>
-                        <PowerFlowPalette
-                            v-if="powerFlowEditorData"
-                            class="dashboard-power-flow-palette"
-                            :devices="powerFlowEditorData.devices"
-                            :placed-device-ids="dashboardPalettePlacedDeviceIds"
-                            :selected-device-id="selectedFlowDeviceId"
-                            @select-device="powerFlowCanvasRef?.selectDevice($event)"
-                            @open-device-detail="openDeviceDetail"
-                            :editable="false"
-                        />
-                        <!-- <DashboardPowerFlowMap :data="powerFlow" /> -->
-                        <PowerFlowCanvas
-                            ref="powerFlowCanvasRef"
-                            class="dashboard-flow-canvas"
-                            v-if="powerFlowLayout && powerFlowEditorData"
-                            :model-value="powerFlowLayout"
-                            :devices="powerFlowEditorData.devices"
-                            :telemetry="powerFlowEditorData.telemetry"
-                            :device-telemetry="powerFlowEditorData.device_telemetry"
-                            :editable="false"
-                            :show-palette="false"
-                            @ready="isFlowReady = true"
-                            @selection-change="handleFlowSelection"
-                            @open-device-detail="openDeviceDetail"
-                        >
-                            <template #actions>
-                                <button
-                                    type="button"
-                                    class="dashboard-flow-expand-button"
-                                    title="전체 화면으로 펼치기"
-                                    aria-label="전체 화면으로 펼치기"
-                                    @click.stop="isFlowExpanded = true"
-                                >
-                                    <el-icon><FullScreen /></el-icon>
-                                </button>
-                            </template>
-                        </PowerFlowCanvas>
                     </GlassPanel>
                 </div>
 
@@ -479,14 +483,21 @@ onBeforeUnmount(() => {
     flex: 1 1 0;
     min-width: 0;
     min-height: 0;
-    :deep(.glass-panel__body) {
-        gap: 8px;
-    }
+}
+
+.dashboard-flow-content {
+    position: relative;
+    display: flex;
+    flex: 1 1 0;
+    gap: 8px;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .dashboard-flow-status {
     position: absolute;
-    inset: 64px 20px 20px;
+    inset: 0;
     z-index: 1;
     display: flex;
     flex-direction: column;

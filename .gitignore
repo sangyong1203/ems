@@ -41,3 +41,4 @@ release/
 # 초기 관리자 비밀번호 등 로컬 인증 설정
 .env
 .env.*
+.vercel
