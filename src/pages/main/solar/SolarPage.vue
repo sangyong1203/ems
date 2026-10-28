@@ -274,11 +274,10 @@ onBeforeUnmount(() => {
 }
 
 .solar-panel--chart {
-    flex: 1 1 62%;
+    flex: 1;
 }
 
 .solar-panel--status {
-    flex: 0 0 38%;
     min-height: 260px;
 }
 

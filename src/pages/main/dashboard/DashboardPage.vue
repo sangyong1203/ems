@@ -541,7 +541,8 @@ onBeforeUnmount(() => {
     min-width: 0;
 }
 .dashboard-panel--kpi :deep(.glass-panel__body) {
-    justify-content: space-around !important;
+    justify-content: flex-start!important;
+    gap: 24px;
 }
 
 .dashboard-flow-expand-button {
