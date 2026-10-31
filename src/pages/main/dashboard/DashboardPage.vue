@@ -539,6 +539,7 @@ onBeforeUnmount(() => {
 
 .dashboard-panel--kpi {
     min-width: 0;
+    overflow: auto;
 }
 .dashboard-panel--kpi :deep(.glass-panel__body) {
     justify-content: flex-start!important;
